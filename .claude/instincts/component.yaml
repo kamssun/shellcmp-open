@@ -1,0 +1,30 @@
+---
+id: archshowcase-component
+trigger: "when creating or modifying Decompose components"
+confidence: 1.0
+domain: architecture
+source: project-rules
+---
+
+# Decompose Component 规范
+
+## Action
+
+- 接口 `XxxComponent` + 实现 `DefaultXxxComponent`
+- 需要导航的组件：构造参数 `AppComponentContext`，实现 `AppComponentContext by context`
+- 不需要导航的组件：构造参数 `ComponentContext`，实现 `ComponentContext by componentContext`
+- 需要注入时加 `KoinComponent`
+- 导航通过 `context.navigator`（由父组件在 `createChild` 中用 `DefaultAppComponentContext(ctx, navManager)` 包装注入）
+- 拆分固定子 Component 用 `childContext(key)`
+- 依赖用 `by inject()`
+- 有状态: 创建 Store，暴露 `state: StateFlow<State>`
+- Store 生命周期: 页面级用 `instanceKeeper.getStore { factory.create() }`（自动 dispose）
+- UI 事件方法内部转发给 `store.accept(Intent.Xxx)`
+
+## Forbidden
+
+- 使用全局单例持有 Navigator（已删除 NavigatorHolder）
+- 子 Component 构造参数传散装导航 lambda（如 `onNavigateToHome: () -> Unit`）
+- 子 Component 构造参数传父状态读取 lambda（如 `currentRouteProvider: () -> Route`）
+- 在 `setContent` / `remember` 内创建 Component，必须在 Compose 之外创建（`@Preview` + `PreviewWrapper` 场景除外，因 context 仅在 Composable 回调中可用）
+

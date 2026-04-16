@@ -1,0 +1,35 @@
+*.iml
+.kotlin
+.gradle
+.settings
+**/build/
+xcuserdata
+!src/**/build/
+local.properties
+.idea/*
+!.idea/runConfigurations/
+.DS_Store
+captures
+.externalNativeBuild
+.cxx
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+node_modules/
+*.project
+*.classpath
+.worktree-meta.json
+iosApp/Podfile.lock
+iosApp/Pods/
+iosApp/iosApp.xcworkspace/
+tools/btrace/pbs/
+graphify-out/
+
+# Claude Code personal config
+.claude/settings.local.json
+
+# Config with secrets (use config.properties.example as template)
+config.properties

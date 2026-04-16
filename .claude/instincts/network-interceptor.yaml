@@ -1,0 +1,14 @@
+trigger: 改网络拦截器 / HttpSend / interceptor
+domain: network-interceptor
+
+action:
+  - HttpSend 只支持单个 intercept，所有拦截逻辑合并在 NetworkModule 的 intercept 回调中
+  - 每个拦截器抽为独立函数，放在 network/interceptor/ 目录下
+  - 拦截器函数签名：suspend fun interceptXxx(request, ...deps): HttpClientCall?
+  - 返回 HttpClientCall 表示短路（不再往下执行），返回 null 表示不拦截
+  - NetworkModule 中按顺序调用各拦截函数，最后 execute(request) 发出真实请求
+  - 扩展时：新建 interceptor 文件 → 在 NetworkModule intercept 链中插入调用
+
+forbidden:
+  - 禁止注册多个 HttpSend.intercept（后注册的会覆盖前一个）
+  - 禁止在拦截器函数中直接依赖 Koin（依赖通过参数传入）

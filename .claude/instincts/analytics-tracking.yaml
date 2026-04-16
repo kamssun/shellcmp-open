@@ -1,0 +1,13 @@
+trigger: 写交互代码 / clickable / KeyboardActions / LazyColumn / 埋点 / 曝光
+
+action:
+  - 点击用 Modifier.appClickable，长按用 appCombinedClickable，IME 用 appKeyboardActions
+  - 列表曝光用 ExposureLazyColumn，items 必须传 key + contentType（自动追踪 + 业务参数自动提取）
+  - App* 组件（AppButton/AppSwitch/AppFilterChip）已内置追踪，直接用即可
+  - 不触发 Store Intent 的纯 UI 交互（滚动/拖拽/动画）不需要 appClickable
+  - 新增 data class 自动被 ExposureParamsProcessor 扫描，无需注解
+
+forbidden:
+  - 禁止在 presentation 层裸用 .clickable / .combinedClickable / KeyboardActions
+  - 禁止手动调用 withUserGesture（由 appClickable 系列统一管理）
+  - 禁止在 ExposureLazyColumn 的 item 里手动加 Modifier.trackExposure（自动注入）

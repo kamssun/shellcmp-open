@@ -1,0 +1,7 @@
+com.example.archshowcase.replayable.processor.MemoryTrackableProcessorProvider
+com.example.archshowcase.replayable.processor.ReplayableProcessorProvider
+com.example.archshowcase.replayable.processor.RouteRegistryProcessorProvider
+com.example.archshowcase.replayable.processor.SelectableStateProcessorProvider
+com.example.archshowcase.replayable.processor.VfResolvableProcessorProvider
+com.example.archshowcase.replayable.processor.EventMapperProcessorProvider
+com.example.archshowcase.replayable.processor.ExposureParamsProcessorProvider

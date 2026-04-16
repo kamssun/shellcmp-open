@@ -1,0 +1,96 @@
+CREATE TABLE IF NOT EXISTS chat_message (
+    id TEXT NOT NULL PRIMARY KEY,
+    conversation_id TEXT NOT NULL,
+    sender_id TEXT NOT NULL,
+    sender_name TEXT NOT NULL,
+    sender_avatar TEXT,
+    body_type TEXT NOT NULL,
+    body_json TEXT NOT NULL,
+    timestamp INTEGER NOT NULL,
+    is_mine INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'SENT',
+    is_recalled INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_message_conversation
+ON chat_message(conversation_id, timestamp DESC, id DESC);
+
+selectByConversation:
+SELECT * FROM chat_message
+WHERE conversation_id = :conversationId
+ORDER BY timestamp DESC, id DESC
+LIMIT :limit OFFSET :offset;
+
+selectById:
+SELECT * FROM chat_message WHERE id = :id;
+
+insert:
+INSERT OR REPLACE INTO chat_message(
+    id, conversation_id, sender_id, sender_name, sender_avatar,
+    body_type, body_json, timestamp, is_mine, status, is_recalled
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateStatus:
+UPDATE chat_message SET status = :status WHERE id = :id;
+
+markRecalled:
+UPDATE chat_message SET is_recalled = 1 WHERE id = :id;
+
+deleteById:
+DELETE FROM chat_message WHERE id = :id;
+
+deleteByConversation:
+DELETE FROM chat_message WHERE conversation_id = :conversationId;
+
+countByConversation:
+SELECT COUNT(*) FROM chat_message WHERE conversation_id = :conversationId;
+
+latestByConversation:
+SELECT * FROM chat_message
+WHERE conversation_id = :conversationId
+ORDER BY timestamp DESC
+LIMIT 1;
+
+latestNonRecalledByConversation:
+SELECT * FROM chat_message
+WHERE conversation_id = :conversationId AND is_recalled = 0
+ORDER BY timestamp DESC
+LIMIT 1;
+
+selectBeforeTimestamp:
+SELECT * FROM chat_message
+WHERE conversation_id = :conversationId
+  AND (timestamp < :beforeTimestamp OR (timestamp = :beforeTimestamp AND id < :beforeId))
+ORDER BY timestamp DESC, id DESC
+LIMIT :limit;
+
+selectAround:
+SELECT id, conversation_id, sender_id, sender_name, sender_avatar,
+       body_type, body_json, timestamp, is_mine, status, is_recalled
+FROM (
+  SELECT id, conversation_id, sender_id, sender_name, sender_avatar,
+         body_type, body_json, timestamp, is_mine, status, is_recalled
+  FROM chat_message
+  WHERE conversation_id = :conversationId
+    AND (timestamp > :anchorTs OR (timestamp = :anchorTs AND id >= :anchorId))
+  ORDER BY timestamp ASC, id ASC
+  LIMIT :afterCount
+)
+UNION ALL
+SELECT id, conversation_id, sender_id, sender_name, sender_avatar,
+       body_type, body_json, timestamp, is_mine, status, is_recalled
+FROM (
+  SELECT id, conversation_id, sender_id, sender_name, sender_avatar,
+         body_type, body_json, timestamp, is_mine, status, is_recalled
+  FROM chat_message
+  WHERE conversation_id = :conversationId
+    AND (timestamp < :anchorTs OR (timestamp = :anchorTs AND id < :anchorId))
+  ORDER BY timestamp DESC, id DESC
+  LIMIT :beforeCount
+)
+ORDER BY timestamp DESC, id DESC;
+
+countAfterAnchor:
+SELECT COUNT(*) FROM chat_message
+WHERE conversation_id = :conversationId
+  AND (timestamp > :anchorTs OR (timestamp = :anchorTs AND id > :anchorId));

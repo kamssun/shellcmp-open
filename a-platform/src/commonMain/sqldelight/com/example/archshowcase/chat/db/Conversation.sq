@@ -1,0 +1,82 @@
+CREATE TABLE IF NOT EXISTS conversation (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    member_count INTEGER NOT NULL DEFAULT 0,
+    last_active_time INTEGER NOT NULL DEFAULT 0,
+    unread_count INTEGER NOT NULL DEFAULT 0,
+    last_msg_preview TEXT,
+    last_msg_body_type TEXT,
+    last_msg_sender_name TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_conversation_last_active ON conversation(last_active_time DESC);
+
+CREATE TABLE IF NOT EXISTS conversation_member (
+    conversation_id TEXT NOT NULL,
+    member_id TEXT NOT NULL,
+    member_name TEXT NOT NULL,
+    member_avatar TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (conversation_id, member_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_member_display
+ON conversation_member(conversation_id, sort_order) WHERE sort_order < 9;
+
+selectAll:
+SELECT * FROM conversation ORDER BY last_active_time DESC;
+
+selectPaged:
+SELECT * FROM conversation ORDER BY last_active_time DESC LIMIT :limit OFFSET :offset;
+
+selectMembersForConversations:
+SELECT * FROM conversation_member
+WHERE conversation_id IN ?
+AND sort_order < 9
+ORDER BY conversation_id, sort_order;
+
+selectById:
+SELECT * FROM conversation WHERE id = :id;
+
+insertConversation:
+INSERT OR REPLACE INTO conversation(id, name, member_count, last_active_time, unread_count, last_msg_preview, last_msg_body_type, last_msg_sender_name)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+updateLastActive:
+UPDATE conversation SET last_active_time = :time WHERE id = :id;
+
+updateConversationSummary:
+UPDATE conversation SET
+    last_msg_preview = :last_msg_preview,
+    last_msg_body_type = :last_msg_body_type,
+    last_msg_sender_name = :last_msg_sender_name,
+    last_active_time = :last_active_time
+WHERE id = :id;
+
+updateUnreadCount:
+UPDATE conversation SET unread_count = :count WHERE id = :id;
+
+incrementUnread:
+UPDATE conversation SET unread_count = unread_count + 1 WHERE id = :id;
+
+incrementUnreadBy:
+UPDATE conversation SET unread_count = unread_count + :delta WHERE id = :id;
+
+clearUnread:
+UPDATE conversation SET unread_count = 0 WHERE id = :id;
+
+totalUnread:
+SELECT COALESCE(SUM(unread_count), 0) FROM conversation;
+
+-- Member queries
+selectAllMembers:
+SELECT * FROM conversation_member WHERE sort_order < 9 ORDER BY conversation_id, sort_order;
+
+selectMembers:
+SELECT * FROM conversation_member
+WHERE conversation_id = :conversationId
+ORDER BY sort_order;
+
+insertMember:
+INSERT OR REPLACE INTO conversation_member(conversation_id, member_id, member_name, member_avatar, sort_order)
+VALUES (?, ?, ?, ?, ?);

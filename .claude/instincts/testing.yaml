@@ -1,0 +1,97 @@
+---
+id: archshowcase-testing
+trigger: "when writing, modifying, or deleting Kotlin/Java source code or unit tests. NOT for documentation-only (.md), yaml/instinct, or Gradle config edits"
+confidence: 1.0
+domain: testing
+source: project-rules
+---
+
+# 测试编写规范
+
+## 位置与结构
+
+- 测试放 commonTest，三端复用；仅平台特有逻辑放 desktopTest / androidTest
+- 测试文件与源文件镜像：`src/commonMain/.../Foo.kt` → `src/commonTest/.../FooTest.kt`
+- 源文件删除/重命名时，同步删除/重命名对应测试文件和 Fake
+- 用 `kotlin.test` 注解（`@Test`、`@BeforeTest`、`@AfterTest`），不用 JUnit 注解
+
+## Koin 管理
+
+- 测试类继承 `KoinTest`，被测对象通过 `by inject()` 获取
+- `@BeforeTest` 中 `startKoin`，`@AfterTest` 中 `stopKoin`
+- 替换依赖用 `declare<Interface> { FakeImpl() }`
+- Fake/Stub 优先于 Mock（MockK 不支持 Native）
+- 禁止绕过 Koin 直接 new 已注册的类
+- 禁止在 commonTest 中使用 `KoinTestRule`（依赖 JUnit4，Native 编译不过）
+
+## TDD 流程
+
+- 核心逻辑（Store Executor、Reducer、工具函数）：**强制 TDD**（RED → GREEN → VERIFY）
+- 集成/平台代码：先实现再补测试
+- UI Content 代码：不强制单元测试，用预览 + 截图测试覆盖
+
+## 覆盖率
+
+- Kover 阈值 **80%**（`koverVerify`，JaCoCo 引擎，数字稳定），新代码必须有测试
+- Kover 锁定 **0.9.7**（JaCoCo 引擎）
+- JaCoCo 引擎 `useJacoco("0.8.11")`，必须根项目 + 子项目同时配置
+- Groovy DSL 无 `packages()` 方法，用 `classes("pkg.*")` 代替
+- Groovy 调 Kotlin varargs 需 spread：`classes(*list as String[])`
+- 测试行为和逻辑，不测语言机制（data class 构造器、var 属性切换、序列化框架）
+- **新增 Store** → 同步创建 `XxxStoreTest`（覆盖每个 Intent、错误路径、Label 发布）
+- **新增 Component** → 同步在 `ComponentWithStoreTest` 中添加创建/交互/生命周期用例
+- **新增 HistoryType 变体** → 同步在 `XxxHistoryTest` 中添加 `applyToState` + `toIntent` 用例
+- 错误路径必须覆盖：创建 `FailingXxxApi`（返回 `Result.failure`）测试 `.onFailure` 分支
+- Component 测试需完整生命周期：`lifecycle.create()` → `resume()` → `destroy()`
+- 新增不可测代码（平台 actual、SDK 桥接）时，同步更新 `gradle/kover.gradle` 排除规则
+- 完成功能后运行 `./gradlew koverVerify` 确认通过再提交
+
+## 不需要测试的代码
+
+- data class / sealed class 构造器和属性访问
+- 简单 var 属性的默认值和切换
+- kotlinx.serialization 简单 data class 的序列化 round-trip（多态 sealed hierarchy 除外，需保留验证 @SerialName 配置）
+- Kover 已排除的类（`*.InitialStateResolver` 等）
+- 常量值断言（`assertEquals("key", CONSTANT_NAME)`）
+
+## Store 测试模板
+
+- `AppConfig.enableRestore` 必须保持 `var`（8+ 处测试依赖运行时切换，不可改为 config.properties）
+- `@BeforeTest`：`startKoin` → `AppConfig.useOBOScheduler = false` → `Dispatchers.setMain(testDispatcher)` → `factory.create()`
+- `@AfterTest`：`store.dispose()` → `Dispatchers.resetMain()` → `AppConfig.useOBOScheduler = true` → `stopKoin()`
+- 异步 Executor 用 `runTest` + `testDispatcher.scheduler.advanceUntilIdle()`
+- Label 验证：通过状态变化间接验证（Turbine 在 Android host 测试中有 flaky 问题）
+- 每个 Store 覆盖：每个 Intent 的状态转换、错误场景、Label 发布
+- OBO 调度器必须关闭，否则 `oboLaunch` 不走 TestDispatcher
+
+## 依赖替换
+
+- 已有 Fake：`MockUserApi`、`MockImageApi`
+- `InMemorySettingsRepository` 会修改 `AppConfig.useOBOScheduler`，测试中用不碰 AppConfig 的 FakeSettingsRepository
+- 网络层测试用 `ktor-client-mock` 的 `MockEngine`
+- 同步 Mock 无法测试中间 loading 态（dispatch 在同一调度周期完成）
+- 成功路径 Mock（如 `MockUserApi`）：放 `a-platform/.../network/mock/`，跨测试共享
+- 失败路径 Failing Fake（如 `FailingUserApi`）：作为 `private class` 放在 `StoreErrorPathTest.kt` 内部
+- 其他新 Fake 放对应模块的 commonTest 目录下
+
+## 验证顺序
+
+改完代码后按此顺序执行，前一步失败则不继续：
+
+1. `desktopTest` — 单测
+2. `koverVerify` — 覆盖率
+3. `assembleDebug` — 构建
+4. `verifyRoborazziDebug` — Preview 截图对比（JVM，改了 UI 时）
+5. `verify-vf.sh` — VF 端到端截图回归（真机，改了 UI 时）
+
+## Roborazzi 截图确定性
+
+- Mock 数据的时间戳必须用固定常量，禁止 `Clock.System.now()`，且选过去日期避免跨日差异
+- 新增 Preview 后先 record 再 verify 确认稳定
+
+## Forbidden
+
+- 禁止在 commonTest 使用 JUnit4 专属 API（`@Rule`、`@RunWith` 等）
+- 禁止测试间共享可变状态（每个 `@Test` 通过 `@BeforeTest` 获得独立实例）
+- 禁止 Mock 框架（MockK / Mockito），统一用手写 Fake
+- 禁止残留孤立测试（源码已删但测试未删），删代码时必须同步清理测试和 Fake

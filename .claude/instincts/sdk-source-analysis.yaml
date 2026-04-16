@@ -1,0 +1,22 @@
+---
+id: archshowcase-sdk-source-analysis
+trigger: "when analyzing third-party SDK behavior or source code"
+confidence: 0.9
+domain: troubleshooting
+source: project-rules
+---
+
+# SDK 源码分析规范
+
+## Action
+
+- 先锁定依赖坐标和版本，优先查 `gradle/libs.versions.toml`，再对照模块 `build.gradle.kts`
+- 优先在 `~/.gradle/caches/modules-2/files-2.1/` 查对应版本的 `-sources.jar`
+- `.gradle` 找不到源码时，先完成 Gradle Sync 或构建拉取依赖；仍缺失再查官方文档、官方源码仓库、Maven/Google Maven 元数据，必要时用 Context7 补官方 API 说明
+- 无法继续时输出阻塞结论：已验证项、未解项、风险、需要谁提供什么资料
+
+## Forbidden
+
+- 禁止在依赖版本未确认时基于经验推断 SDK 行为
+- 禁止将反编译结果当作权威结论
+- 禁止在阻塞时不记录已尝试路径和失败原因

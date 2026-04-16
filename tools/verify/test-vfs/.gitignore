@@ -1,0 +1,3 @@
+# 验证产物（每次运行生成，不入库）
+**/output/
+batch_output/

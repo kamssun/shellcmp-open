@@ -1,0 +1,40 @@
+---
+id: archshowcase-code-review
+trigger: "when reviewing code changes before commit"
+confidence: 1.0
+domain: code-quality
+source: project-rules
+---
+
+# 代码审查合规检查
+
+> 提交前对本次改动执行合规审查
+
+## 审查方式
+
+对本次 git diff 的改动，按下方核查清单逐项检查，仅审查被改动的代码
+
+## 核查清单
+
+根据改动涉及的文件，加载对应 instinct 并核查其 Action + Forbidden：
+
+| 改动涉及 | 核查 instinct |
+|----------|---------------|
+| 所有改动 | `forbidden.yaml` |
+| Component 创建/修改 | `component.yaml`（AppComponentContext / navigator / 生命周期） |
+| Store / Reducer / State | `mvi.yaml`（纯函数 / 回溯集成） |
+| 列表 / 动画 / Effect / 性能 | `performance.yaml`（ArrayDeque / OBOLaunchedEffect / lambda modifier） |
+| UI / Compose | `ui-compose.yaml`（App* 组件 / 禁 Material3 / @Preview） |
+| App* 自定义组件 | `custom-components.yaml`（LocalContentColor / Canvas 尺寸） |
+| DI / Koin | `koin-di.yaml`（singleOf / inject 方式 / Feature Module） |
+| 国际化字符串 | `i18n.yaml`（tr() / Res.string） |
+| 状态回溯 | `time-travel.yaml`（registerRestorableStore / ReplayableState） |
+| 常量 / 代码风格 | `code-patterns.yaml`（常量位置 / 命名 / guard clause） |
+| clickable / 曝光 / 埋点 | `analytics-tracking.yaml`（appClickable / ExposureLazyColumn / 禁裸 clickable） |
+| 网络层 | `network-interceptor.yaml` |
+
+## Forbidden
+
+- 禁止跳过合规审查直接提交
+- 禁止 agent 报告 CRITICAL/HIGH 问题时继续提交
+- Review 修复必须先读对应 instinct 再改，禁止以"最佳实践"为由引入违反 instincts 的改动

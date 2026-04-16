@@ -1,0 +1,36 @@
+# === 与 .gitignore 同步 ===
+*.iml
+.kotlin
+.gradle
+.settings
+**/build/
+xcuserdata
+local.properties
+.idea/
+.DS_Store
+captures
+.externalNativeBuild
+.cxx
+*.xcodeproj/
+*.xcworkspace/
+**/xcshareddata/WorkspaceSettings.xcsettings
+node_modules/
+*.project
+*.classpath
+.worktree-meta.json
+iosApp/Podfile.lock
+iosApp/Pods/
+tools/btrace/pbs/
+
+# === 测试截图 & 生成物 ===
+androidApp/src/test/snapshots/
+tools/verify/test-vfs/
+androidApp/src/release/generated/
+iosApp/iosApp/Assets.xcassets/
+
+# === 非代码结构 ===
+openspec/
+.claude/
+
+# === graphify 自身产物 ===
+graphify-out/

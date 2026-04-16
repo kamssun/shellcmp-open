@@ -1,0 +1,183 @@
+def jacocoVersion = "0.8.11"
+
+dependencies {
+    kover(project(":a-core"))
+    kover(project(":a-platform"))
+    kover(project(":a-shared"))
+}
+
+subprojects {
+    pluginManager.withPlugin("org.jetbrains.kotlinx.kover") {
+        kover {
+            useJacoco(jacocoVersion)
+        }
+    }
+}
+
+def excludedClasses = [
+    "*.BuildConfig",
+    "*.ComposableSingletons*",
+    "*_Factory",
+    // KSP generated (+ inner classes)
+    "*StoreExportStrategy*",
+    "*StoreFactoryHelpersKt*",
+    "*GeneratedExportStrategiesKt*",
+    "*IntentResolverKt*",
+    "*StateFields*",
+    // Platform actuals
+    "*Platform_*Kt*",
+    "*DesktopPlatform*",
+    "*AndroidPlatform*",
+    "*TimeTravelExporter_*Kt*",
+    // Android-only utils (+ inner classes)
+    "*ContextProvider*",
+    "*PermissionHelper*",
+    "*PermissionUtilKt*",
+    // Compose Content lambda inner classes
+    "*ContentKt*",
+    // Koin DI modules
+    "*ModuleKt*",
+    // Kotlin interface default impls
+    "*DefaultImpls",
+    // Private Composable-only data classes
+    "*.Conversation",
+    // InitialStateResolver: deep paths depend on global timeTravelController singleton
+    "*.InitialStateResolver",
+    // ScrollRestoreEffect Composable 内部编译器生成类（Flow/Continuation lambda）
+    "*ScrollRestoreEffectKt*",
+    // ScrollPosition data class 伴生对象
+    "*ScrollPosition*Companion",
+    // Log 工具类：纯基础设施，测试无业务价值
+    "com.example.archshowcase.core.util.Log",
+    // AppConfig：纯 var 配置属性，不含业务逻辑
+    "com.example.archshowcase.core.AppConfig",
+
+    // === Package-level exclusions (as class wildcards) ===
+    // Note: Kover 0.9.7 Groovy DSL has no packages() method in filters.excludes.
+    // Use classes("pkg.*") instead. The * wildcard matches dots, so subpackages are included.
+
+    // a-shared: resources, DI, i18n, preview
+    "com.example.archshowcase.resources.*",
+    "com.example.archshowcase.di.*",
+    "com.example.archshowcase.i18n.*",
+    "com.example.archshowcase.presentation.preview.*",
+    // a-shared: pure Component shells without logic
+    "com.example.archshowcase.presentation.demo.crash.*",
+    "com.example.archshowcase.presentation.demo.adaptive.*",
+    // a-shared: login (Store tested; Component shells excluded)
+    "com.example.archshowcase.presentation.login.DefaultLoginComponent*",
+    "com.example.archshowcase.presentation.login.DefaultEmailLoginComponent*",
+    // a-platform: auth (LoginRepository thin delegate, KoinComponent)
+    "com.example.archshowcase.auth.DefaultLoginRepository*",
+    "com.example.archshowcase.presentation.payment.*",
+    "com.example.archshowcase.presentation.auth.*",
+    "com.example.archshowcase.presentation.live.*",
+    "com.example.archshowcase.presentation.root.*",
+    "com.example.archshowcase.presentation.timetravel.*",
+    // a-platform: expect/actual + SDK + real network
+    "com.example.archshowcase.payment.*",
+    "com.example.archshowcase.network.api.*",
+    "com.example.archshowcase.auth.*",
+    "com.example.archshowcase.im.*",
+    "com.example.archshowcase.rtc.*",
+    "com.example.archshowcase.devicetoken.*",
+    "com.example.archshowcase.attribution.*",
+    "com.example.archshowcase.user.*",
+    "com.example.archshowcase.network.header.*",
+    "com.example.archshowcase.data.settings.*",
+    // a-core: platform expect/actual
+    "com.example.archshowcase.core.util.ScreenshotCapture",
+    // a-core: verification infra (data classes + orchestrator + ADB bridge)
+    "com.example.archshowcase.core.trace.verification.VerificationReport*",
+    "com.example.archshowcase.core.trace.verification.VerificationItem*",
+    "com.example.archshowcase.core.trace.verification.LevelResult*",
+    "com.example.archshowcase.core.trace.verification.VerificationRunner*",
+    "com.example.archshowcase.core.trace.verification.NetworkRecorderBridge*",
+    // a-shared: pure Compose UI widgets
+    "com.example.archshowcase.presentation.component.*",
+    // a-shared: Component shells without business logic
+    "com.example.archshowcase.presentation.demo.DefaultDemoRootComponent*",
+    "com.example.archshowcase.presentation.demo.DemoRootComponent*",
+    "com.example.archshowcase.presentation.main.DefaultMainComponent*",
+    "com.example.archshowcase.presentation.main.TmpTabComponent*",
+    "com.example.archshowcase.presentation.main.MainTab",
+    // a-shared: NavigationStackManager (Decompose Navigation dependency)
+    "com.example.archshowcase.presentation.navigation.NavigationStackManager*",
+    // a-shared: chat Component shells (Store tested; shell logic is navigation delegation)
+    "com.example.archshowcase.presentation.chat.list.DefaultConversationListComponent*",
+    "com.example.archshowcase.presentation.chat.room.DefaultChatRoomComponent*",
+    // a-shared: chat Compose UI widgets (pure presentation)
+    "com.example.archshowcase.presentation.chat.widget.*",
+    // a-platform: chat data layer (mock, DAO, platform drivers, DI, models, mapper)
+    "com.example.archshowcase.chat.local.*",
+    "com.example.archshowcase.chat.mock.*",
+    "com.example.archshowcase.chat.repository.*",
+    "com.example.archshowcase.chat.di.*",
+    "com.example.archshowcase.chat.model.*",
+    "com.example.archshowcase.chat.mapper.*",
+    // a-platform: stress test tools (Desktop-only, test harness code)
+    "com.example.archshowcase.chat.stress.*",
+    // a-platform: network interceptors (SDK bridge + ktor pipeline)
+    "com.example.archshowcase.network.interceptor.*",
+    // a-platform: SQLDelight generated code (query wrappers + schema)
+    "com.example.archshowcase.chat.db.*",
+    // a-core: analytics platform actuals (expect/actual, not testable in commonTest)
+    "com.example.archshowcase.core.analytics.AppLifecycleTracker",
+    // a-core: analytics config (data class + trivial sampling lookup)
+    "com.example.archshowcase.core.analytics.AnalyticsConfig",
+    // a-core: analytics Compose modifier wrappers (appClickable etc., no branching logic)
+    "com.example.archshowcase.core.analytics.AppInteractionKt",
+    // a-core: analytics sealed class data models (data class boilerplate: equals/hashCode/copy/toString)
+    "com.example.archshowcase.core.analytics.model.*",
+    // KSP generated event mappers
+    "*EventMapperRegistry*",
+    "*EventMapper*",
+    // KSP generated exposure params
+    "*ExposureParamsRegistry*",
+    "*ExposureParamsKt",
+    // a-core: infra without unit tests
+    "com.example.archshowcase.core.di.*",
+    "com.example.archshowcase.core.scheduler.*",
+    // a-core: OBOEffect Compose runtime infra (OBOScheduler tested separately)
+    "com.example.archshowcase.core.compose.OBOEffect*",
+    "com.example.archshowcase.core.compose.exposure.ExposureLazyColumn*",
+    "com.example.archshowcase.core.compose.exposure.TrackExposure*",
+    "com.example.archshowcase.core.compose.exposure.LocalExposureViewport*",
+    "com.example.archshowcase.core.compose.exposure.ExposureViewport*",
+    "com.example.archshowcase.core.perf.*",
+    "com.example.archshowcase.core.trace.leak.*",
+    "com.example.archshowcase.core.trace.user.*",
+    "com.example.archshowcase.core.trace.export.strategies.*",
+]
+
+def excludedAnnotations = [
+    "*.Generated*",
+    "androidx.compose.runtime.Composable",
+]
+
+kover {
+    useJacoco(jacocoVersion)
+    reports {
+        filters {
+            excludes {
+                classes(*excludedClasses as String[])
+                annotatedBy(*excludedAnnotations as String[])
+            }
+        }
+        total {
+            // Duplicate filters: Kover 0.9.7 may not inherit reports.filters into total.
+            // Keep explicit to ensure koverVerify uses the correct exclusions.
+            filters {
+                excludes {
+                    classes(*excludedClasses as String[])
+                    annotatedBy(*excludedAnnotations as String[])
+                }
+            }
+            verify {
+                rule {
+                    minBound(80)
+                }
+            }
+        }
+    }
+}

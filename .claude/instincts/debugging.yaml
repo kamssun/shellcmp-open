@@ -1,0 +1,27 @@
+---
+id: archshowcase-debugging
+trigger: "when fixing bugs, diagnosing crashes, analyzing performance issues, or encountering unexpected runtime behavior"
+confidence: 1.0
+domain: debugging
+source: project-rules
+---
+
+# 调试规范
+
+## Action
+
+- 修 bug 前先加日志确认实际执行流，用日志输出定位根因后再改代码
+- 一个表象可能对应多个独立根因，日志要覆盖所有可疑路径
+- 确认修复后清除所有调试日志再提交
+- Android 运行时问题优先用 `adb logcat` 抓取实际日志分析，不要只看代码猜
+- logcat 过滤项目日志：`adb logcat -s ArchShowcase` 或按 tag 过滤 `adb logcat | grep -E "PERF:|ArchShowcase"`
+- 性能问题看 `[PERF:STARTUP]` `[PERF:JANK]` `[PERF:PAGE]` tag，详见 `docs/PERF_MONITOR.md`
+- OBO 调度器诊断看 `OBO:SLOW`（单任务超半帧 / 队列深度超 512）和 `OBO:FLOOD`（来源累计超 100ms/s）tag，需 `AppConfig.enableOBODiagnostics = true`
+- 崩溃问题看 `AndroidRuntime` tag：`adb logcat -s AndroidRuntime`
+- 需要持续监控时用 `adb logcat -v time` 带时间戳输出
+
+## Forbidden
+
+- 禁止未经日志验证就猜测性修复
+- 禁止只看代码静态推理就下结论，必须跑起来看实际行为
+- 禁止遇到运行时问题不看 logcat 就直接改代码

@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+    <!-- Common -->
+    <string name="btn_back">&lt; Back</string>
+    <string name="btn_dismiss">关闭</string>
+    <string name="btn_retry">重试</string>
+    <string name="btn_go_back">返回</string>
+    <string name="btn_reload">重新加载</string>
+    <string name="text_feature_desc">功能说明:</string>
+    <string name="text_unknown_error">未知错误</string>
+
+    <!-- Live -->
+    <string name="text_live_rtc">Live — RTC: %1$s</string>
+
+    <!-- Settings -->
+    <string name="title_settings">设置</string>
+    <string name="text_obo_scheduler">OBO 调度器</string>
+    <string name="text_obo_scheduler_desc">开启后 Effect 逐个执行，避免低端设备卡顿</string>
+
+    <!-- Image -->
+    <string name="title_image_list">图片列表 (%1$d/%2$d)</string>
+    <string name="text_no_more">没有更多了</string>
+
+    <!-- Login -->
+    <string name="title_login">ArchShowcase 登录</string>
+    <string name="btn_google_login">Google 登录</string>
+    <string name="btn_apple_login">Apple 登录</string>
+    <string name="btn_email_code_login">邮箱验证码登录</string>
+
+    <!-- Detail -->
+    <string name="title_detail">详情: %1$s</string>
+    <string name="text_verify_route">验证: Decompose 路由传参</string>
+    <string name="text_route_params">路由参数:</string>
+    <string name="text_route_id">id = %1$s</string>
+
+    <!-- Email Login -->
+    <string name="title_email_login">邮箱登录</string>
+    <string name="label_email">邮箱</string>
+    <string name="btn_resend_code">重新发送验证码</string>
+    <string name="btn_send_code">发送验证码</string>
+    <string name="label_verification_code">验证码</string>
+    <string name="btn_verify_login">验证并登录</string>
+
+    <!-- Payment -->
+    <string name="title_payment">支付</string>
+    <string name="btn_buy">购买</string>
+    <string name="text_payment_idle">空闲</string>
+    <string name="text_payment_init">初始化…</string>
+    <string name="text_payment_ready">就绪</string>
+    <string name="text_payment_processing">处理中…</string>
+    <string name="text_payment_success">成功</string>
+    <string name="text_payment_cancelled">已取消</string>
+    <string name="text_payment_failed">失败</string>
+
+    <!-- Adaptive Demo -->
+    <string name="title_adaptive_demo">响应式布局 Demo</string>
+    <string name="text_verify_adaptive">验证: Material3 Adaptive</string>
+    <string name="text_adaptive_features">• ListDetailSceneStrategy - 列表详情双栏\n• SupportingPaneSceneStrategy - 主辅助栏\n• 自动适应手机/平板/折叠屏</string>
+    <string name="text_mock_list_hint">模拟列表 (大屏幕会显示双栏):</string>
+
+    <!-- Demo Home -->
+    <string name="title_demo_home">Decompose + MVIKotlin Demo</string>
+    <string name="text_demo_home_subtitle">验证 Decompose 3.4.0 + MVIKotlin 4.3.0</string>
+    <string name="btn_network_demo">1. 网络请求 (MVIKotlin Store)</string>
+    <string name="btn_image_demo">2. 图片加载 (Coil)</string>
+    <string name="btn_adaptive_demo">3. 响应式布局 (Material3 Adaptive)</string>
+    <string name="btn_crash_demo">4. 崩溃报告 (CrashKiOS)</string>
+    <string name="btn_obo_demo">5. OBO 压力测试</string>
+    <string name="btn_settings">6. 设置</string>
+    <string name="btn_payment">7. 支付</string>
+
+    <!-- OBO Demo -->
+    <string name="title_obo_demo">OBO 压力测试</string>
+    <string name="text_obo_scheduling">OBO 调度</string>
+    <string name="text_obo_sequential">逐个执行，保持响应</string>
+    <string name="text_obo_concurrent">并发执行，可能卡顿</string>
+    <string name="text_effect_per_item">Effect/Item</string>
+    <string name="text_block_time">阻塞时间</string>
+    <string name="text_obo_total_block">30 items × %1$d effects × %2$dms = %3$dms 总阻塞</string>
+
+    <!-- Crash Demo -->
+    <string name="title_crash_demo">崩溃报告 Demo</string>
+    <string name="text_verify_crashkios">验证: CrashKiOS</string>
+    <string name="text_crash_features">• crashkios-crashlytics - Firebase Crashlytics\n• crashkios-bugsnag - Bugsnag\n• iOS Kotlin 堆栈符号化\n• 需要 isStatic = true</string>
+    <string name="btn_log_kermit">记录日志 (Kermit)</string>
+    <string name="btn_simulate_exception">模拟捕获异常</string>
+    <string name="btn_trigger_crash">触发真实崩溃</string>
+    <string name="text_crash_hint">点击红色按钮将触发真实崩溃，查看 Logcat 中的 Recent Intents</string>
+
+    <!-- Tab Bar -->
+    <string name="tab_home">首页</string>
+    <string name="tab_discover">发现</string>
+    <string name="tab_chat">聊天</string>
+    <string name="tab_me">我</string>
+
+    <!-- Chat -->
+    <string name="chat_input_hold_to_talk">按住 说话</string>
+    <string name="chat_input_placeholder">输入消息…</string>
+    <string name="chat_btn_send">发送</string>
+    <string name="chat_action_copy">复制</string>
+    <string name="chat_action_recall">撤回</string>
+    <string name="chat_action_delete">删除</string>
+    <string name="chat_tab_emoji">表情</string>
+    <string name="chat_tab_sticker">贴纸</string>
+    <string name="chat_plus_album">相册</string>
+    <string name="chat_plus_camera">拍摄</string>
+    <string name="chat_preview_image">[图片]</string>
+    <string name="chat_preview_gif">[动图]</string>
+    <string name="chat_preview_voice">[语音] %1$d″</string>
+    <string name="chat_preview_video">[视频]</string>
+    <string name="chat_preview_gift">[礼物] %1$s</string>
+    <string name="chat_preview_broadcast">[公屏] %1$s</string>
+    <string name="chat_preview_sticker">[表情]</string>
+    <string name="chat_preview_unknown">[未知消息]</string>
+    <string name="chat_recall_self">你撤回了一条消息</string>
+    <string name="chat_recall_other">%1$s 撤回了一条消息</string>
+    <string name="chat_typing">%1$s 正在输入...</string>
+    <string name="chat_unsupported_type">[暂不支持的消息类型]</string>
+    <string name="chat_recall_failed">撤回失败</string>
+    <string name="chat_no_more_history">— 没有更多消息了 —</string>
+    <string name="chat_new_message_overflow">%1$d+</string>
+    <string name="chat_pending_updates">↑ %1$d 个对话有更新</string>
+
+    <!-- Network Demo -->
+    <string name="title_network_demo">网络请求 Demo (MVIKotlin)</string>
+    <string name="text_verify_mvikotlin">验证: MVIKotlin Store + Decompose Component</string>
+    <string name="btn_requesting">请求中…</string>
+    <string name="btn_make_request">发起 GET 请求</string>
+    <string name="text_test_navigation">测试导航传参:</string>
+    <string name="btn_detail_001">详情 001</string>
+    <string name="btn_detail_002">详情 002</string>
+    <string name="text_mvikotlin_arch">MVIKotlin 架构:</string>
+    <string name="text_mvikotlin_features">• Intent -> Executor -> Msg -> Reducer -> State\n• Store 生命周期由 InstanceKeeper 管理\n• stateFlow 提供响应式状态订阅</string>
+</resources>

@@ -1,0 +1,50 @@
+---
+id: archshowcase-koin-di
+trigger: "when injecting dependencies, creating DI modules, or using Koin"
+confidence: 1.0
+domain: dependency-injection
+source: project-rules
+---
+
+# Koin 依赖注入规范
+
+## Action
+
+- 注册: 绑定接口用 `singleOf(::Impl) bind Interface::class`
+- 仅在需要条件分支时用 `single<Interface> { if (...) ... else ... }`（如 preview/mock 切换）
+- 获取: Composable 用 `koinInject()`，Component 用 `by inject()`（需实现 `KoinComponent`）
+- ComponentContext 不注入，由平台入口创建
+- 单例不层层传递，在需要的地方直接 inject
+- Service / Infrastructure 类需要依赖时，实现 `KoinComponent` + `by inject()`，构造函数只接受 Context
+
+### singleOf vs factoryOf
+
+- `singleOf`：无状态对象（Service / Repository / StoreFactory / Provider），默认选择
+- `factoryOf`：仅用于持有 per-instance 可变状态、需要每次注入拿到独立实例的对象（如 `ScrollUpdateCoordinator`）
+- StoreFactory 无状态（只持有指向其他单例的引用，~64 字节），必须用 `singleOf`
+
+### getAppModules vs Feature Module
+
+- `getAppModules` 仅放启动时必需的模块：被 RootComponent/AuthObserver/NetworkModule 等启动链路直接依赖的服务
+- 非启动必需的服务（如 RTC、支付等特定功能场景才用的）用 Feature Module 按需加载
+
+### Feature Module
+
+使用 `featureModuleOf<T>` 统一模式（定义为 private，防止重复加载）。在 XxxModule.kt 中定义 private feature module，然后提供 loadXxxModule() 函数供调用。
+
+- Component init 中调用 `loadXxxModule()`
+- 然后使用 `instanceKeeper.getStore` 或 `registerRestorableStore` 获取/注册 Store
+- `featureModuleOf<T>` 的泛型 T 是该模块注册的核心类型，用于防重复加载检测
+- 原则：只传 Context，其他用 Koin
+
+## expect/actual 平台桥接
+
+- expect class 不可 fake → 提取接口 + `DefaultXxxRepository`（KoinComponent），放 `a-platform` 对应包
+- 测试中用 Fake 替换接口，不依赖 expect class
+
+## Forbidden
+
+- 通用禁止项见 `forbidden.yaml`
+- 禁止通过构造函数注入 Koin 管理的依赖（Context 除外），用 `KoinComponent` + `by inject()`
+- 非 KoinComponent 类需要访问 Koin 时，用 `private object KoinHelper : KoinComponent` + `getKoin().get<T>()`，禁止 `GlobalContext`
+- 禁止生产代码 `single { Xxx() }` 写法，统一用 `singleOf(::Xxx)`（测试代码因需传入 Fake 可用 `single<Interface> { FakeImpl() }`）

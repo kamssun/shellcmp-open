@@ -1,0 +1,40 @@
+---
+id: archshowcase-mvi
+trigger: "when implementing MVI state management with MVIKotlin"
+confidence: 1.0
+domain: architecture
+source: project-rules
+---
+
+# MVI (MVIKotlin) 规范
+
+## Action
+
+- 数据流: Intent → Executor → Msg → Reducer → State
+- Component 暴露 `state: StateFlow<State>`
+- 字段订阅：`@CustomState`（= `@SelectableState` + `@MemoryTrackable`）用 `rememberFields()`；否则手写 `selectAsState`/`selectRefAsState`；Store 复合 State 禁止 `collectAsState()`，单值 Flow 可用
+- 排除字段：`ReplayableState`/`ScrollRestorableState` 字段自动排除；高频变化且不驱动 UI 的字段加 `@ExcludeFromSelect` 避免无谓的 distinctUntilChanged 开销
+- Compose 原生 State 之间的派生用 `derivedStateOf`（如 scrollState → showFab），不适用于 StateFlow 字段提取
+- Time Travel: Intent/State/Msg/Label 实现 `JvmSerializable`
+- **Reducer 必须是纯函数，禁止可变状态**
+- 高频状态边界：纯 UI 表现（动画、手势、滚动、文本输入、Slider 拖拽、播放进度）留 Compose 层，需要业务逻辑/持久化/回溯的才进 Store
+- **新建 Store 必须集成回溯**（详见 `time-travel.yaml`）
+
+## 架构分离原则
+
+- **Store.kt**: 纯接口和数据类（Intent、State、Msg、Record）
+- **Factory.kt**: 业务逻辑（Bootstrapper、Executor、Reducer）
+- Record 仅为数据类，逻辑通过扩展函数在 Factory 中实现
+
+## Reducer 纯函数原则 (CRITICAL)
+
+**禁止:**
+- Reducer object 中使用可变属性 (ArrayDeque, MutableList, var)
+- 在 Reducer 外部维护状态
+- 使用 removeFirst(), addLast(), clear() 等可变操作
+
+**正确做法:**
+- 所有状态存储在 State 中
+- 使用不可变操作: +, takeLast(), filter(), map()
+- Reducer 只负责 State + Msg -> State 的纯转换
+

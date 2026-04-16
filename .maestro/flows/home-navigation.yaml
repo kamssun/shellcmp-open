@@ -1,0 +1,9 @@
+appId: ${APP_ID}
+---
+- launchApp
+
+- assertVisible: "Decompose + MVIKotlin Demo"
+- assertVisible: "1. 网络请求 (MVIKotlin Store)"
+- assertVisible: "2. 图片加载 (Coil)"
+- assertVisible: "3. 响应式布局 (Material3 Adaptive)"
+- assertVisible: "4. 崩溃报告 (CrashKiOS)"

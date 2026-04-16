@@ -1,0 +1,60 @@
+---
+id: archshowcase-code-patterns
+trigger: "when refactoring, extracting patterns, or reviewing code style in Kotlin/Java source code. NOT for documentation, yaml, or command/agent edits"
+confidence: 1.0
+domain: code-quality
+source: project-rules
+---
+
+# 代码模式规范
+
+## Action
+
+### 编码纪律
+
+- 写新代码前必须对照 `forbidden.yaml` + 现有同类代码的模式，不走最短路径
+- 新建接口/类时检查：放哪个模块？注入方式？命名是否对齐现有惯例？
+
+### 常量放置
+
+| 层 | 文件 |
+|---|---|
+| 项目级 SDK 配置 | `buildConfig.properties`（根目录，提交到 git） |
+| 网络 Header key | `HeaderConstants.kt`（commonMain） |
+| iOS Info.plist key | `InfoPlistKey.swift`（iosApp） |
+| iOS Kotlin plist key | `HeaderProvider.ios.kt` companion |
+| SDK header key | `LoginBridgeImpl.swift` static let |
+| Desktop mock 值 | `HeaderProvider.desktop.kt` companion |
+| Android 配置 | `BuildConfig`（由 `buildConfig.properties` 自动生成） |
+
+### Debug-only 特性隔离
+
+- 接口层用 nullable 表达可选特性，实现层用 `isDebug()` 守卫
+- 调用方用 `?.let` / `?.prop == true` 短路，零 release 开销
+
+### 通用入口点简洁
+
+- Application / MainActivity 等平台入口只做编排调用，禁止内联业务逻辑、反射、复杂条件分支
+- 新功能需要初始化时，创建独立 object（如 `XxxSetup`），入口只调用其公开方法
+
+### Flag 包裹消除
+
+- `flag = true / block / flag = false` 出现 3+ 次时，提取 `private inline fun withXxx(block)` 用 try/finally 包裹
+
+### Guard Clause 展平
+
+- 回调 lambda 提为命名方法，方法体首行 guard clause 早返回，消除嵌套
+
+### 命名对称
+
+- 双向同步成对命名：`syncXxxFromYyy` / `syncYyyFromXxx`
+
+### Holder vs Provider
+
+- **Holder**（`XxxHolder`）：被动存储引用，private 字段 + `set()` / `clear()`，由父组件管理生命周期
+- **Provider**（`XxxProvider`）：主动提供/生产，有创建、计算、委托等行为
+
+## Forbidden
+
+- 禁止深嵌套回调（超过 3 层），用 guard clause 或提取方法展平
+- 禁止不对称命名的成对操作

@@ -1,0 +1,156 @@
+{
+    "name": "vf_export",
+    "description": "",
+    "verification_text": "",
+    "platform": "multiplatform",
+    "created_at": "2026-03-17T19:14:17",
+    "tte_format": "ttr",
+    "intents": [
+        {
+            "store": "ImageDemoStore",
+            "intent_type": "UpdateScrollPosition",
+            "params": {
+                "firstVisibleIndex": "3",
+                "offset": "203"
+            },
+            "delay_after_ms": 0,
+            "note": ""
+        },
+        {
+            "store": "ImageDemoStore",
+            "intent_type": "UpdateScrollPosition",
+            "params": {
+                "firstVisibleIndex": "6",
+                "offset": "412"
+            },
+            "delay_after_ms": 0,
+            "note": ""
+        },
+        {
+            "store": "ImageDemoStore",
+            "intent_type": "UpdateScrollPosition",
+            "params": {
+                "firstVisibleIndex": "9",
+                "offset": "641"
+            },
+            "delay_after_ms": 0,
+            "note": ""
+        },
+        {
+            "store": "ImageDemoStore",
+            "intent_type": "LoadMore",
+            "params": {},
+            "delay_after_ms": 0,
+            "note": ""
+        },
+        {
+            "store": "ImageDemoStore",
+            "intent_type": "UpdateScrollPosition",
+            "params": {
+                "firstVisibleIndex": "13",
+                "offset": "190"
+            },
+            "delay_after_ms": 0,
+            "note": ""
+        },
+        {
+            "store": "ImageDemoStore",
+            "intent_type": "UpdateScrollPosition",
+            "params": {
+                "firstVisibleIndex": "16",
+                "offset": "411"
+            },
+            "delay_after_ms": 0,
+            "note": ""
+        },
+        {
+            "store": "ImageDemoStore",
+            "intent_type": "UpdateScrollPosition",
+            "params": {
+                "firstVisibleIndex": "19",
+                "offset": "616"
+            },
+            "delay_after_ms": 0,
+            "note": ""
+        },
+        {
+            "store": "ImageDemoStore",
+            "intent_type": "UpdateScrollPosition",
+            "params": {
+                "firstVisibleIndex": "23",
+                "offset": "177"
+            },
+            "delay_after_ms": 0,
+            "note": ""
+        },
+        {
+            "store": "ImageDemoStore",
+            "intent_type": "UpdateScrollPosition",
+            "params": {
+                "firstVisibleIndex": "26",
+                "offset": "399"
+            },
+            "delay_after_ms": 0,
+            "note": ""
+        },
+        {
+            "store": "ImageDemoStore",
+            "intent_type": "UpdateScrollPosition",
+            "params": {
+                "firstVisibleIndex": "29",
+                "offset": "632"
+            },
+            "delay_after_ms": 0,
+            "note": ""
+        },
+        {
+            "store": "ImageDemoStore",
+            "intent_type": "LoadMore",
+            "params": {},
+            "delay_after_ms": 0,
+            "note": ""
+        },
+        {
+            "store": "ImageDemoStore",
+            "intent_type": "UpdateScrollPosition",
+            "params": {
+                "firstVisibleIndex": "33",
+                "offset": "178"
+            },
+            "delay_after_ms": 0,
+            "note": ""
+        },
+        {
+            "store": "ImageDemoStore",
+            "intent_type": "UpdateScrollPosition",
+            "params": {
+                "firstVisibleIndex": "36",
+                "offset": "390"
+            },
+            "delay_after_ms": 0,
+            "note": ""
+        },
+        {
+            "store": "ImageDemoStore",
+            "intent_type": "UpdateScrollPosition",
+            "params": {
+                "firstVisibleIndex": "39",
+                "offset": "601"
+            },
+            "delay_after_ms": 3000,
+            "note": ""
+        }
+    ],
+    "wait_after_init_ms": 5000,
+    "screenshot_compare": {
+        "ssim_threshold": 0.95,
+        "mask_regions": []
+    },
+    "network_tape": {
+        "match_strategy": "sequence",
+        "note": ""
+    },
+    "covers": [
+        "ImageDemoStore"
+    ]
+}

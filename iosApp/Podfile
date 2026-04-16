@@ -1,0 +1,28 @@
+platform :ios, '15.0'
+
+source 'https://cdn.cocoapods.org/'
+# source 'git@your-private-podspec-repo.example.com:specs.git'
+
+target 'iosApp' do
+  use_frameworks!
+
+  # All SDK pods removed for open-source showcase.
+  # In production: login, auth, IM, RTC, payment, attribution SDKs go here.
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+    end
+  end
+
+  # 清理主工程残留的 EXCLUDED_ARCHS
+  main_project = installer.aggregate_targets.first&.user_project
+  main_project&.targets&.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings.delete('EXCLUDED_ARCHS[sdk=iphonesimulator*]')
+    end
+  end
+  main_project&.save
+end

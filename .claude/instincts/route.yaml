@@ -1,0 +1,21 @@
+---
+id: archshowcase-route
+trigger: "when adding, modifying, or referencing Route definitions"
+confidence: 1.0
+domain: architecture
+source: project-rules
+---
+
+# 路由定义规范
+
+## Action
+
+- 新增路由只改 `Route.kt` 一行（加 `data object` 或 `data class`）
+- `@RouteRegistry(fallback = "Home")` 由 KSP 自动生成 `serialName` 扩展 + `fromSerialName` 伴生函数
+- data class 路由参数必须全部为 String
+- 生成代码用编译期字符串字面量，混淆安全（不依赖 `KClass.simpleName`）
+
+## Forbidden
+
+- 手写 `serialName` / `fromSerialName` / NAME 常量（已由 KSP 生成）
+- 用 `this::class.simpleName` 做路由序列化（混淆后断裂）

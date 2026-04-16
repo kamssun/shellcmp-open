@@ -1,0 +1,23 @@
+---
+id: archshowcase-custom-components
+trigger: "when implementing or modifying App* custom components in presentation/component/"
+confidence: 1.0
+domain: ui
+source: project-bugs
+---
+
+# 自定义组件（presentation/component/）规范
+
+## Action
+
+- Canvas 组件必须用 `requiredSize()` 或 `size()` 指定显式尺寸，Canvas 无固有尺寸，`defaultMinSize` 不保证渲染
+- 描边效果使用 `Modifier.border(width, color, shape)` 且放在 `clip(shape)` 之前；`drawRect(Stroke)` 在 clip 后会被裁切
+- 颜色可继承的组件（AppText、AppCircularProgress 等）须感知 `LocalContentColor`：优先用调用方显式传入的颜色，其次 `LocalContentColor.current`，最后 AppTheme 默认值
+- 容器组件（AppButton、AppTextButton）通过 `CompositionLocalProvider(LocalContentColor provides contentColor)` 向子树传递前景色
+- 新增 App* 组件后在 `ComponentApiTest` 补充编译级引用验证
+
+## Forbidden
+
+- 禁止 Canvas 仅依赖 `defaultMinSize` 控制尺寸
+- 禁止在 `clip(shape)` 之后用 `drawBehind { drawRect(style = Stroke) }` 画描边
+- 禁止自定义组件硬编码颜色默认值而不感知 `LocalContentColor`（会导致嵌套在 AppButton 内时同色不可见）

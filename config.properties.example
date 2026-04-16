@@ -1,0 +1,19 @@
+# Project-level SDK config (committed to git, shared across team)
+
+# Server
+auth.server.url=https://api.example.com
+app.key=YOUR_APP_KEY
+google.server.client.id=YOUR_GOOGLE_CLIENT_ID
+
+# IM SDK
+im.api.key=YOUR_IM_API_KEY
+im.code.tag=1.0.0
+im.xlog.key=
+
+# Risk SDK (device fingerprint + request signing)
+risky.ali.key=YOUR_KEY
+risky.sign.key=YOUR_KEY
+risky.sign.key.new=YOUR_KEY
+
+# Attribution
+adjust.app.token=YOUR_TOKEN

@@ -1,0 +1,62 @@
+---
+id: archshowcase-time-travel
+trigger: "when adding state restore, time travel, or interaction replay support"
+confidence: 1.0
+domain: architecture
+source: project-rules
+---
+
+# 交互回溯规范
+
+## Action
+
+### Store 层
+- State 实现 `ReplayableState`，添加 `history: AppendOnlyHistory<XXXHistoryRecord>`
+- **有 LazyColumn/LazyRow 的页面必须**额外实现 `ScrollRestorableState` + `scrollPosition` 字段
+- StoreFactory 用 `resolveXxxStoreInitialState()` 获取初始状态
+- **参数化页面**（如聊天室按 conversationId 区分）必须用实例化 store name（`"BaseName:$param"`），不得共用固定名
+- Reducer 中所有改变**可见状态**的 Msg **必须**通过 `record.applyToState(this)` 写历史，禁止直接 `copy()` 跳过
+- 元数据 Msg（如 `Initialized` 设置标题/人数）也必须走历史，否则回溯时丢失
+- Msg 需携带 `timestamp`（从 Executor 传入，Reducer 是纯函数禁止调 `Clock`）
+
+### Component 层
+- 无滚动列表：`registerRestorableStore`
+- **有滚动列表：`registerScrollRestorableStore`** + 注入 `ScrollUpdateCoordinator` + 暴露 `scrollRestoreEvent` 和 `updateScrollPosition`
+
+### Content 层（有滚动列表时）
+- `ScrollRestoreEffect(listState, component.scrollRestoreEvent)` — 恢复回溯滚动位置
+- `snapshotFlow { listState.firstVisibleItemIndex to offset }.debounce(100).distinctUntilChanged()` → `component.updateScrollPosition` — 追踪滚动
+
+### 全局
+- 导出策略: 实现 `StoreExportStrategy` 并注册到 `TimeTravelExporter`
+- 整条链路由 `AppConfig.enableRestore` 开关控制，默认 `isDebug()`；State→String 日志由 `enableTimeTravelLogging` 独立控制（默认 false，压测时关闭避免性能开销）
+- 参考实现: `ImageDemoStore` / `ImageDemoComponent` / `ImageDemoContent`
+- 详见 `docs/STATE_RESTORE.md`
+
+## KSP 生成
+
+- `@Replayable` 支持 `@Repeatable` + `storeName`：同一 Record 可为不同 Store 生成独立代码
+- 任务依赖用 `KotlinCompilationTask<*>`（非 `KotlinCompile`）
+- KSP 生成文件：`{StoreName}FactoryHelpers.kt` + `{StoreName}ExportStrategy.kt` + `GeneratedExportStrategies.kt` + `{Store}MemorySnapshot.kt` + `MemorySnapshotRegistry.kt`（`@MemoryTrackable`）
+- LeakAuditor：Debug-only，`ComponentExtensions.registerRestorableStore` 自动 hook，RootComponent init 启动
+
+## History 文件
+
+- `XxxHistory.kt` 包含 `XxxHistoryType`（sealed interface）+ `XxxHistoryRecord`（data class）
+- Record 必须包含 `applyToState()` 和 `toIntent()`
+- `applyToState()` 中追加历史用 `prevState.appendHistory(this)`（内部使用 `AppendOnlyHistory` 共享底座，O(1) 追加）
+- 已有：SettingsHistory / OBOHistory / ImageHistory / NavigationHistory / NetworkHistory / ChatRoomHistory / ConversationListHistory
+
+### 多实例导出
+- 导出框架通过 `StoreExportRegistry.get()` 前缀匹配支持实例化 store name
+- `SimpleExportStrategy.generateEvents` 使用 `record.storeName`（非 `this.storeName`）生成事件
+- JVM/iOS 导出器对每个实例独立收集 records 和 StateHolder
+
+## Forbidden
+
+- 禁止 Reducer 中用 `copy()` 绕过历史记录（所有可见状态变更必须经 `applyToState`）
+- 禁止 Reducer 中调用 `Clock.System.now()`（时间戳由 Executor 通过 Msg 传入）
+- 禁止参数化页面的 Store 使用固定 store name，必须用实例化名称（`"BaseName:$param"`）
+- 禁止直接 `prevState.history + this` 或 `ArrayDeque(prevState.history)` 构建 history
+- 禁止对 history 做截断/限长——history 仅 Debug 启用，无限增长是预期行为
+

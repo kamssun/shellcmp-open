@@ -1,0 +1,18 @@
+tasks.register("verifyVf", Exec) {
+    group = "verification"
+    description = "Run VF screenshot regression (all or -Pvf.dir=<path>)"
+    def vfDir = project.findProperty("vf.dir") ?: "tools/verify/test-vfs"
+    commandLine("bash", "tools/verify/run_verification.sh", vfDir)
+}
+
+tasks.register("cleanVerification", Exec) {
+    group = "verification"
+    description = "Clean VF verification output directories"
+    commandLine("bash", "tools/verify/run_verification.sh", "--clean", "tools/verify/test-vfs")
+}
+
+subprojects {
+    tasks.matching { it.name == "clean" }.configureEach {
+        finalizedBy(rootProject.tasks.named("cleanVerification"))
+    }
+}

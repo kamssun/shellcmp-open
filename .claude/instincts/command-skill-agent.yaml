@@ -1,0 +1,25 @@
+---
+id: archshowcase-command-skill-agent
+trigger: "when creating or modifying claude code commands, skills, or agents (.claude/commands/, .claude/skills/, .claude/agents/)"
+confidence: 1.0
+domain: workflow
+source: project-rules
+---
+
+# Command 与 Agent 设计规范
+
+## Action
+
+- Command 默认在主 agent 上下文执行，领域知识引用 instincts/docs，不内联
+- 需要 Agent 的场景：需预授权工具消除权限弹窗、需选模型（sonnet/opus）、流程独立不依赖主上下文能力
+- 不需要 Agent 的场景：流程中需调用其他 subagent、需访问主上下文的 instincts 自动加载
+- 领域知识放 `docs/` 或 `instincts/`，command/agent 启动时 Read 读取
+- 只有用户需要直接调用的能力才放 `.claude/skills/`，内部知识不放 skills
+- 创建新 skill 时使用 `/skill-create` 从 git 历史提取模式，不要手写
+
+## Forbidden
+
+- Command 内联大段领域知识（引用 instincts/docs，保持单一来源）
+- 领域知识放 `.claude/skills/` 污染 `/` 命令列表
+- Agent 中内联领域知识（读取引用）
+- 需要调用其他 subagent 的流程套 agent（subagent 不能嵌套）

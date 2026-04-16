@@ -1,0 +1,54 @@
+---
+id: archshowcase-commit-convention
+trigger: "when committing code, running git commit, or preparing to commit"
+confidence: 1.0
+domain: git
+source: project-rules
+---
+
+# 提交规范
+
+> 本规范覆盖全局 `git-workflow.md` 的 commit 流程，commit 前必须加载
+
+## Pre-commit 验证
+
+提交前必须确认 `testing.yaml` 中的验证顺序已通过（前一步失败则不提交）：
+desktopTest → koverVerify → assembleDebug → verifyRoborazziDebug（UI 改动时） → verify-vf.sh（UI 改动时）
+
+跳过某步时必须在提交前向用户说明理由（如"仅添加 @Preview，未改渲染逻辑，跳过 VF"），禁止静默跳过
+
+## Pre-commit 代码检查
+
+检查本次改动是否残留临时代码：
+- 调试日志（仅为排查问题临时添加的 Log/println/print/console.log）
+- 临时绕过逻辑（hardcoded return true、TODO 标注的临时方案）
+- 注释掉的旧代码块
+
+## Pre-commit 合规审查
+
+按 `code-review.yaml` 的核查清单对本次改动执行合规审查，CRITICAL/HIGH 问题必须修复后才能继续
+
+## Pre-commit 文档检查
+
+检查本次改动是否需要同步更新以下文档：
+- `.claude/instincts/` — 新增/变更模式时，对应 instinct 是否需要新建或修改
+- `docs/` — 架构、数据流、状态回溯等深度文档是否仍然准确
+- `CLAUDE.md` — 索引表、架构心智模型是否需要同步
+- `TESTING.md` — 测试策略、命令是否需要更新
+
+仅在确认以上四项检查全部通过后才执行 commit
+
+## 消息格式
+
+`<type>(<scope>): <subject>`，冒号后保留一个空格
+`scope` 可选但强烈建议填写，省略时使用 `<type>: <subject>`
+`type` 仅允许：feat / fix / refactor / docs / style / perf / test / chore
+`subject` 使用中文描述，≤50 字符，不以句号结尾
+
+## Forbidden
+
+- 禁止跳过 pre-commit 验证直接提交
+- 禁止使用未定义 `type`
+- 禁止 `subject` 使用英文（type/scope 保持英文，subject 必须中文）
+- 禁止 `subject` 以句号结尾
+- 禁止省略冒号后的空格

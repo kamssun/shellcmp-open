@@ -1,0 +1,25 @@
+---
+id: archshowcase-i18n
+trigger: "when adding UI text, creating Content composables, or working with string resources"
+confidence: 1.0
+domain: ui
+source: project-rules
+---
+
+# i18n (Compose Resources) 规范
+
+## Action
+
+- Content 层 UI 字符串统一用 `tr(Res.string.xxx)`，不得硬编码
+- 资源文件: `a-shared/src/commonMain/composeResources/values/strings.xml`（英文默认）+ `values-zh/strings.xml`（中文）
+- 新增字符串必须同时添加英文和中文条目
+- String key 命名前缀: `btn_`（按钮）、`title_`（页面标题）、`text_`（文本）、`label_`（表单标签）
+- 带参数的字符串用占位符 `%1$s` / `%1$d`，调用时传参 `tr(Res.string.xxx, arg1, arg2)`
+- 资源类导入: `import com.example.archshowcase.resources.*` + `import com.example.archshowcase.i18n.tr`
+- StringProvider 由 RootContent 通过 CompositionLocalProvider 安装，子 Content 无需关心
+
+## Forbidden
+
+- 禁止 Content 中硬编码用户可见字符串（按钮文字、标题、提示等）
+- 禁止绕过 `tr()` 直接调用 `stringResource()`
+- 禁止在非 Composable 上下文使用 `tr()`（它是 @Composable 函数）

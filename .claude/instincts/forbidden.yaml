@@ -1,0 +1,69 @@
+---
+id: archshowcase-forbidden
+trigger: "when writing any code in this project"
+confidence: 1.0
+domain: code-quality
+source: project-rules
+---
+
+# 禁止事项
+
+## Forbidden
+
+- 禁止 `by inject()` 获取 Store，必须用 `instanceKeeper.getStore`
+- 禁止手动 new 可注入的类（框架对象如 CoroutineScope、Flow、StackNavigation 除外）
+- 禁止 Composable 中创建 HttpClient/ImageLoader
+- 禁止 ComponentContext 注册到 Koin
+- 禁止 Image 加载网络图片，用 AsyncImage
+- 禁止 composition 中直接执行副作用
+- 禁止 remember 块中读取 state
+- 禁止 LazyColumn 不设 stable key
+- 禁止 LazyColumn `items`/`item` 不设 `contentType`，不同类型的 item 必须用不同的 contentType 值以便复用 composition slot
+- 禁止 UI 层直接调用 Repository
+- 禁止使用 GlobalScope
+- 禁止忽略异常
+- 禁止 inline 闭包内裸 return
+- 禁止硬编码 API URL
+- 禁止硬编码业务字符串常量，抽到相关文件的常量对象中（常量放置位置见 `code-patterns.yaml`）
+- 禁止使用 `kotlinx.datetime.Clock`，统一用 `kotlin.time.Clock`（需 `@OptIn(ExperimentalTime::class)`）
+- 禁止 Content 中硬编码用户可见字符串，统一用 `tr(Res.string.xxx)`（见 i18n.yaml）
+- 禁止主线程执行网络请求
+- 禁止随意添加容量限制（如 MAX_SIZE, MAX_HISTORY），防止 OOM 的除外
+- 禁止类中持有 `appContext` / `applicationContext` 成员变量，统一用 `ContextProvider.applicationContext`
+- 禁止手动传递 Activity 引用（如 `setCurrentActivity`），统一用 `ContextProvider.current`
+
+## Cross-Platform
+
+- 禁止改动 commonMain 的接口/基类后不检查所有 platform actual 调用点是否需要同步更新
+- 使用 Android API 时必须检查 minSdk 兼容性（当前 minSdk=24）
+
+## Network
+
+- API 接口放 `a-platform/.../network/api/`，返回 `Result<T>`
+- Repository 放同目录，注入 API，处理错误
+- DTO 放 `a-platform/.../network/dto/`
+- 路径用 `ApiRoutes` 常量
+- 新 API 在对应 Feature Module 中注册
+
+## Kover 排除规则
+
+- 禁止在 kover class pattern 中使用 `$` 字符（会导致所有 exclusion 失效）
+- 禁止创建类名含 `Generated` 的注解类（会被 `annotatedBy("*.Generated*")` 误排除）
+
+## Logging
+
+只用 `com.example.archshowcase.core.util.Log`
+
+## 覆盖率
+
+- 禁止新增可度量代码不写测试，完成后 `koverVerify` 必须 ≥80%
+- 禁止写凑覆盖率的测试（构造器属性断言、常量值断言、框架生成代码验证）
+
+## Code Style
+
+- 公共组件必须有简明注释
+- 禁止代码中内联全限定类名，必须用 `import` 导入，同名冲突用 `as` 别名
+
+## 决策方法
+
+- 禁止凭经验假设不确定的技术方案、配置参数、API 用法，先搜索官方文档和社区最佳实践再决策

@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+    <!-- Common -->
+    <string name="btn_back">&lt; Back</string>
+    <string name="btn_dismiss">Dismiss</string>
+    <string name="btn_retry">Retry</string>
+    <string name="btn_go_back">Go Back</string>
+    <string name="btn_reload">Reload</string>
+    <string name="text_feature_desc">Features:</string>
+    <string name="text_unknown_error">Unknown error</string>
+
+    <!-- Live -->
+    <string name="text_live_rtc">Live — RTC: %1$s</string>
+
+    <!-- Settings -->
+    <string name="title_settings">Settings</string>
+    <string name="text_obo_scheduler">OBO Scheduler</string>
+    <string name="text_obo_scheduler_desc">Execute Effects one by one to avoid lag on low-end devices</string>
+
+    <!-- Image -->
+    <string name="title_image_list">Image List (%1$d/%2$d)</string>
+    <string name="text_no_more">No more items</string>
+
+    <!-- Login -->
+    <string name="title_login">ArchShowcase Login</string>
+    <string name="btn_google_login">Google Login</string>
+    <string name="btn_apple_login">Apple Login</string>
+    <string name="btn_email_code_login">Email Verification Login</string>
+
+    <!-- Detail -->
+    <string name="title_detail">Detail: %1$s</string>
+    <string name="text_verify_route">Verify: Decompose Route Params</string>
+    <string name="text_route_params">Route Params:</string>
+    <string name="text_route_id">id = %1$s</string>
+
+    <!-- Email Login -->
+    <string name="title_email_login">Email Login</string>
+    <string name="label_email">Email</string>
+    <string name="btn_resend_code">Resend Code</string>
+    <string name="btn_send_code">Send Code</string>
+    <string name="label_verification_code">Verification Code</string>
+    <string name="btn_verify_login">Verify &amp; Login</string>
+
+    <!-- Payment -->
+    <string name="title_payment">Payment</string>
+    <string name="btn_buy">Buy</string>
+    <string name="text_payment_idle">Idle</string>
+    <string name="text_payment_init">Init…</string>
+    <string name="text_payment_ready">Ready</string>
+    <string name="text_payment_processing">Processing…</string>
+    <string name="text_payment_success">Success</string>
+    <string name="text_payment_cancelled">Cancelled</string>
+    <string name="text_payment_failed">Failed</string>
+
+    <!-- Adaptive Demo -->
+    <string name="title_adaptive_demo">Adaptive Layout Demo</string>
+    <string name="text_verify_adaptive">Verify: Material3 Adaptive</string>
+    <string name="text_adaptive_features">• ListDetailSceneStrategy - List/Detail dual pane\n• SupportingPaneSceneStrategy - Main/Supporting pane\n• Auto-adapt to phone/tablet/foldable</string>
+    <string name="text_mock_list_hint">Mock List (dual pane on large screens):</string>
+
+    <!-- Demo Home -->
+    <string name="title_demo_home">Decompose + MVIKotlin Demo</string>
+    <string name="text_demo_home_subtitle">Verify Decompose 3.4.0 + MVIKotlin 4.3.0</string>
+    <string name="btn_network_demo">1. Network (MVIKotlin Store)</string>
+    <string name="btn_image_demo">2. Image Loading (Coil)</string>
+    <string name="btn_adaptive_demo">3. Adaptive Layout (Material3 Adaptive)</string>
+    <string name="btn_crash_demo">4. Crash Report (CrashKiOS)</string>
+    <string name="btn_obo_demo">5. OBO Stress Test</string>
+    <string name="btn_settings">6. Settings</string>
+    <string name="btn_payment">7. Payment</string>
+
+    <!-- OBO Demo -->
+    <string name="title_obo_demo">OBO Stress Test</string>
+    <string name="text_obo_scheduling">OBO Scheduling</string>
+    <string name="text_obo_sequential">Sequential, keep responsive</string>
+    <string name="text_obo_concurrent">Concurrent, may lag</string>
+    <string name="text_effect_per_item">Effect/Item</string>
+    <string name="text_block_time">Block Time</string>
+    <string name="text_obo_total_block">30 items × %1$d effects × %2$dms = %3$dms total blocking</string>
+
+    <!-- Crash Demo -->
+    <string name="title_crash_demo">Crash Report Demo</string>
+    <string name="text_verify_crashkios">Verify: CrashKiOS</string>
+    <string name="text_crash_features">• crashkios-crashlytics - Firebase Crashlytics\n• crashkios-bugsnag - Bugsnag\n• iOS Kotlin stack symbolication\n• Requires isStatic = true</string>
+    <string name="btn_log_kermit">Log (Kermit)</string>
+    <string name="btn_simulate_exception">Simulate Caught Exception</string>
+    <string name="btn_trigger_crash">Trigger Real Crash</string>
+    <string name="text_crash_hint">Clicking the red button will trigger a real crash, check Recent Intents in Logcat</string>
+
+    <!-- Tab Bar -->
+    <string name="tab_home">Home</string>
+    <string name="tab_discover">Discover</string>
+    <string name="tab_chat">Chat</string>
+    <string name="tab_me">Me</string>
+
+    <!-- Chat -->
+    <string name="chat_input_hold_to_talk">Hold to talk</string>
+    <string name="chat_input_placeholder">Type a message…</string>
+    <string name="chat_btn_send">Send</string>
+    <string name="chat_action_copy">Copy</string>
+    <string name="chat_action_recall">Recall</string>
+    <string name="chat_action_delete">Delete</string>
+    <string name="chat_tab_emoji">Emoji</string>
+    <string name="chat_tab_sticker">Stickers</string>
+    <string name="chat_plus_album">Album</string>
+    <string name="chat_plus_camera">Camera</string>
+    <string name="chat_preview_image">[Image]</string>
+    <string name="chat_preview_gif">[GIF]</string>
+    <string name="chat_preview_voice">[Voice] %1$d″</string>
+    <string name="chat_preview_video">[Video]</string>
+    <string name="chat_preview_gift">[Gift] %1$s</string>
+    <string name="chat_preview_broadcast">[Broadcast] %1$s</string>
+    <string name="chat_preview_sticker">[Sticker]</string>
+    <string name="chat_preview_unknown">[Unknown]</string>
+    <string name="chat_recall_self">You recalled a message</string>
+    <string name="chat_recall_other">%1$s recalled a message</string>
+    <string name="chat_typing">%1$s is typing…</string>
+    <string name="chat_unsupported_type">[Unsupported message type]</string>
+    <string name="chat_recall_failed">Recall failed</string>
+    <string name="chat_no_more_history">— No more messages —</string>
+    <string name="chat_new_message_overflow">%1$d+</string>
+    <string name="chat_pending_updates">↑ %1$d chats updated</string>
+
+    <!-- Network Demo -->
+    <string name="title_network_demo">Network Demo (MVIKotlin)</string>
+    <string name="text_verify_mvikotlin">Verify: MVIKotlin Store + Decompose Component</string>
+    <string name="btn_requesting">Requesting…</string>
+    <string name="btn_make_request">Send GET Request</string>
+    <string name="text_test_navigation">Test Navigation Params:</string>
+    <string name="btn_detail_001">Detail 001</string>
+    <string name="btn_detail_002">Detail 002</string>
+    <string name="text_mvikotlin_arch">MVIKotlin Architecture:</string>
+    <string name="text_mvikotlin_features">• Intent -> Executor -> Msg -> Reducer -> State\n• Store lifecycle managed by InstanceKeeper\n• stateFlow provides reactive state subscription</string>
+</resources>

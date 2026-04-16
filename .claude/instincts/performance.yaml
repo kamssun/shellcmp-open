@@ -1,0 +1,36 @@
+---
+id: archshowcase-performance
+trigger: "when working with lists, effects, LazyColumn, UI performance, or baseline profile"
+confidence: 1.0
+domain: performance
+source: project-rules
+---
+
+# 性能规范
+
+## Action
+
+- 列表操作禁止 `+`/`dropLast`/`takeLast`，用 `ArrayDeque` + `toList()`（仅在数据变更时调用）
+- OBO（One-By-One）是主线程调度器，`oboLaunch`/`OBOScheduler.post` 均在主线程执行，不是后台线程
+- Effect 统一用 `OBOLaunchedEffect`（`core.compose`），避免低端设备卡顿
+- 主线程延迟任务（非 Compose 场景）用 `OBOScheduler.post(tag) {}`，tag 为来源标识（类名或模块名）。禁止用 `Handler.postDelayed`
+- 三方 SDK 的 Handler 调用由 `build-plugin` ASM Transform 自动拦截收束到 OBO，无需手动处理。修改黑名单见 `OBOHandlerTransformFactory.SKIP_PREFIXES`
+- Intent 追踪: debug 保留完整信息，release 只记录简化信息（实现 `Traceable` 接口）
+- LazyColumn/LazyRow item 内禁止嵌套超过 2 层
+- 列表 item 圆角用 `Modifier.clip(shape).background(color, shape)` 而非 `Surface`，因为 `Surface` 携带 CompositionLocal 开销，在滚动场景触发不必要重组。仅在需要 ripple/contentColor/tonal elevation 时才用 `Surface`
+- 圆角只在 item 最外层做一次，禁止内部子组件重复裁剪
+- 非全局数据的 Store 跟随页面销毁（绑定 ComponentContext 生命周期）
+- 动画/滚动等频繁变化的状态，用 lambda modifier 延迟读取：`offset{}` 代替 `offset()`，`graphicsLayer{}` 代替 `alpha()`/`rotation()`，`drawBehind{}` 代替 `background()`
+- Composable 体内的排序/过滤/格式化用 `remember(key)` 缓存
+- **不要用 `kotlinx-collections-immutable`**：`PersistentList` 未实现 `java.io.Serializable`，与 MVIKotlin `JvmSerializable` 冲突导致导出崩溃。集合稳定性通过 `a-shared/compose_stability_config.conf` 声明 `List/Set/Map` 为 stable 解决
+- 列表 item 内用 `AppText`（基于 `BasicText`），项目已移除 Material3 依赖
+- Kotlin 2.0+ Compose Compiler 默认启用 strong skipping：unstable 参数用 `===` 比较，stable 参数用 `equals()` 比较，两者都能 skip。不要为了解决重组问题盲目往 `compose_stability_config.conf` 加类，先确认真正的重组源头
+- 启动路径或主页结构大改后，重新生成 Baseline Profile：`./gradlew :androidApp:generateBaselineProfile`
+- Baseline Profile 生成产物（`baseline-prof.txt`）需提交到版本控制
+- 高频回调路径（帧回调、滚动监听等）禁止 >1ms 的操作和不必要的对象创建——系统调用结果缓存、序列化延迟到低频路径
+- GC 压力检测（`AppConfig.enableGcPressureDetection`）会在 blocking GC 累积超阈值时输出 Store 集合大小报告，排查内存膨胀时看 `[PERF:GC_PRESSURE]` 日志
+
+## Forbidden
+
+- 怀疑线程安全问题时，必须先确认实际调用路径是否真的跨线程，禁止未经验证就加锁或改 copy-on-write
+
