@@ -2,6 +2,18 @@
 
 KMP 跨平台 App 外壳项目（Android / iOS / Desktop）。
 
+## 🎥 视频演示
+
+- [💻 Desktop 热重载演示](https://github.com/user-attachments/assets/ac1d9b98-64d5-4a18-8b31-c4d0310b704c) - 改代码秒级生效，极大提升开发效率
+- [⏪ MVI 状态回溯演示](https://github.com/user-attachments/assets/4f834f16-a44f-4448-baa0-48c0496d8768) - 时间旅行与开发书签功能
+- [⏱️ OBO 调度器演示](https://github.com/user-attachments/assets/382f5490-8390-4a8d-aaf1-234ae785181c) - 解决消息积压，保证长列表极度流畅
+- [🤖 VF 自动化回归演示](https://github.com/user-attachments/assets/9cd654b1-b219-4878-8a59-df023b9c9c90) - 零手写断言的全链路 UI/逻辑验证
+- [💬 极限并发微信消息模拟演示](https://github.com/user-attachments/assets/0b2052ac-f67d-478c-a751-1024f0d23ee7) - 彻底打通渲染瓶颈与并发压力，保持丝滑体验
+
+> 💡 **注：以上视频均在 Pixel 4a 的 Debug 环境下录制，Release 包的性能与流畅度更佳。**
+
+[Read this in English](README_en.md)
+
 ## 架构
 
 ```
@@ -106,6 +118,7 @@ OBO 的做法：队列里**永远最多只有一个任务**。当前任务执行
 **问题二：卡顿了但不知道谁慢。** 没有 OBO 时，几十个任务挤在一起执行，性能监控只能看到"这一批加起来耗时 200ms"，无法区分具体是哪个任务慢。有了 OBO，每个任务是独立的消息，监控能精准报告"任务 X 耗时 50ms"——**OBO 是性能监控能精准定位的前提。**
 
 - **效果** — 同样的工作量（30 个列表项 × 10 个任务 × 3ms），原生方式全部并发会卡死，OBO 逐个执行保持流畅滚动
+- **极限并发模拟（微信级消息洪峰）** — 在内部搭建了极高压力的 IM 消息并发场景（如 1000 个群聊同时活跃，单群每秒超高频刷屏），结合 OBO 调度器、分片 Flush 背压机制以及精确的渲染更新策略，在疯狂并发下依然保持长列表与聊天窗口丝滑流畅，彻底突破并发渲染瓶颈。
 - **内置对比界面** — 压测页面带实时帧率指示器 + 可调参数，一键切换 OBO / 原生模式，效果差异肉眼可见
 - **三端统一** — Android / iOS / Desktop 各自适配
 - **三方 SDK Handler 拦截** — OBO 只能管住自己的代码，但三方 SDK（IM / 支付 / 归因等）直接调 `Handler.post/send` 往主线程塞消息，绕过了 OBO 队列，照样造成积压。解决：编译期 ASM 字节码改写，将三方 SDK 的 Handler 调用自动收束到 OBO，无需 SDK 配合。黑名单排除系统框架（`androidx.*`、`kotlinx.coroutines.*` 等），只拦截业务 SDK。拦截报告见 `build/reports/obo-handler/`

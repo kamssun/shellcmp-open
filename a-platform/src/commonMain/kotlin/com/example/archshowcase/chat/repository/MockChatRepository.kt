@@ -375,6 +375,6 @@ class MockChatRepository : ChatRepository, KoinComponent, AutoCloseable {
          * - StressTestConfig.backpressure() → 背压极限 ~5000msg/s
          * - StressTestConfig.fullBlast() → 1000 群 300 活跃 + ChatRoom ~610msg/s
          */
-        private val STRESS_CONFIG: StressTestConfig? = null
+        private val STRESS_CONFIG: StressTestConfig? = StressTestConfig.fullBlast()
     }
 }
