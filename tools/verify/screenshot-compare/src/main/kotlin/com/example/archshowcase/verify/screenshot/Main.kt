@@ -83,11 +83,9 @@ private fun runScreenshotCompare(args: Map<String, String>) {
 
 private fun runReport(args: Map<String, String>) {
     val outputDir = File(args["output"] ?: error("Missing --output"))
-    val manifestFile = args["manifest"]?.let { File(it) }
-    val scenarioName = if (manifestFile?.exists() == true) {
+    val scenarioName = args["scenario"] ?: if (args["manifest"]?.let { File(it) }?.exists() == true) {
         val json = Json { ignoreUnknownKeys = true }
-        val manifest = json.decodeFromString<ManifestName>(manifestFile.readText())
-        manifest.name
+        json.decodeFromString<ManifestName>(File(args["manifest"]!!).readText()).name
     } else "unknown"
 
     val ssimFiles = mutableListOf<Pair<String, File>>()

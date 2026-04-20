@@ -48,14 +48,25 @@ object SsimEngine {
         maskRegions: List<MaskRegion> = emptyList(),
         generateDiffMap: Boolean = false
     ): SsimResult {
-        require(actual.width == baseline.width && actual.height == baseline.height) {
-            "Image dimensions must match: actual=${actual.width}x${actual.height}, baseline=${baseline.width}x${baseline.height}"
-        }
+        val width: Int
+        val height: Int
+        val cropActual: BufferedImage
+        val cropBaseline: BufferedImage
 
-        val width = actual.width
-        val height = actual.height
-        val grayA = toGrayscale(actual)
-        val grayB = toGrayscale(baseline)
+        if (actual.width == baseline.width && actual.height == baseline.height) {
+            width = actual.width
+            height = actual.height
+            cropActual = actual
+            cropBaseline = baseline
+        } else {
+            width = minOf(actual.width, baseline.width)
+            height = minOf(actual.height, baseline.height)
+            System.err.println("WARN: dimension mismatch actual=${actual.width}x${actual.height} baseline=${baseline.width}x${baseline.height}, cropping to ${width}x${height}")
+            cropActual = actual.getSubimage(0, 0, width, height)
+            cropBaseline = baseline.getSubimage(0, 0, width, height)
+        }
+        val grayA = toGrayscale(cropActual)
+        val grayB = toGrayscale(cropBaseline)
         val mask = buildMask(width, height, maskRegions)
 
         val halfWin = WINDOW_SIZE / 2

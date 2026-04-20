@@ -67,6 +67,19 @@ trap '_cleanup' EXIT INT TERM
 
 # ─── 通用工具 ────────────────────────────────────────────
 
+# manifest name 无意义时 fallback 到目录相对路径
+resolve_scenario_name() {
+    local vf_dir="$1"
+    local name
+    name=$(jq -r '.name // "unknown"' "$vf_dir/manifest.json" 2>/dev/null || echo "unknown")
+    if [[ "$name" == "vf_export" || "$name" == "unknown" ]]; then
+        # 取相对于 test-vfs 的路径，如 "timetravel/checkbox"
+        name=$(echo "$vf_dir" | sed 's|.*/test-vfs/||; s|/$||')
+        [[ -z "$name" ]] && name=$(basename "$vf_dir")
+    fi
+    echo "$name"
+}
+
 adb_cmd() {
     if [[ -n "$DEVICE_SERIAL" ]]; then
         adb -s "$DEVICE_SERIAL" "$@"
@@ -144,7 +157,7 @@ _verify_one() {
     local vf_dir="$1"
 
     local scenario_name
-    scenario_name=$(jq -r '.name // "unknown"' "$vf_dir/manifest.json")
+    scenario_name=$(resolve_scenario_name "$vf_dir")
     local intent_count
     intent_count=$(jq -r '.intents | length' "$vf_dir/manifest.json")
     echo "=== Verification: $scenario_name ==="
@@ -224,25 +237,34 @@ _verify_one() {
             echo "[6a] SSIM: start_baseline vs verify_a..."
             local start_args=(--actual "$output_dir/verify_a.png" --baseline "${vf_dir}/start_baseline.png" --output "$output_dir" --threshold 0.95)
             [[ -n "$mask_regions" ]] && start_args+=(--mask "$mask_regions")
-            java -jar "$COMPARE_JAR" "${start_args[@]}"
-            mv "$output_dir/result_ssim.json" "$output_dir/result_ssim_start.json"
-            mv "$output_dir/diff_heatmap.png" "$output_dir/diff_heatmap_start.png" 2>/dev/null
+            if java -jar "$COMPARE_JAR" "${start_args[@]}"; then
+                mv "$output_dir/result_ssim.json" "$output_dir/result_ssim_start.json"
+                mv "$output_dir/diff_heatmap.png" "$output_dir/diff_heatmap_start.png" 2>/dev/null
+            else
+                echo '{"passed":false,"score":0,"threshold":0.95,"error":"SSIM compare crashed"}' > "$output_dir/result_ssim_start.json"
+            fi
         fi
 
         if [[ -f "${vf_dir}/end_baseline.png" ]]; then
             echo "[6b] SSIM: end_baseline vs verify_b..."
             local end_args=(--actual "$output_dir/verify_b.png" --baseline "${vf_dir}/end_baseline.png" --output "$output_dir" --threshold 0.95)
             [[ -n "$mask_regions" ]] && end_args+=(--mask "$mask_regions")
-            java -jar "$COMPARE_JAR" "${end_args[@]}"
-            mv "$output_dir/result_ssim.json" "$output_dir/result_ssim_end.json"
-            mv "$output_dir/diff_heatmap.png" "$output_dir/diff_heatmap_end.png" 2>/dev/null
+            if java -jar "$COMPARE_JAR" "${end_args[@]}"; then
+                mv "$output_dir/result_ssim.json" "$output_dir/result_ssim_end.json"
+                mv "$output_dir/diff_heatmap.png" "$output_dir/diff_heatmap_end.png" 2>/dev/null
+            else
+                echo '{"passed":false,"score":0,"threshold":0.95,"error":"SSIM compare crashed"}' > "$output_dir/result_ssim_end.json"
+            fi
         elif [[ -f "${vf_dir}/baseline.png" ]]; then
             echo "[6b] SSIM: baseline vs verify_b..."
             local end_args=(--actual "$output_dir/verify_b.png" --baseline "${vf_dir}/baseline.png" --output "$output_dir" --threshold 0.95)
             [[ -n "$mask_regions" ]] && end_args+=(--mask "$mask_regions")
-            java -jar "$COMPARE_JAR" "${end_args[@]}"
-            mv "$output_dir/result_ssim.json" "$output_dir/result_ssim_end.json"
-            mv "$output_dir/diff_heatmap.png" "$output_dir/diff_heatmap_end.png" 2>/dev/null
+            if java -jar "$COMPARE_JAR" "${end_args[@]}"; then
+                mv "$output_dir/result_ssim.json" "$output_dir/result_ssim_end.json"
+                mv "$output_dir/diff_heatmap.png" "$output_dir/diff_heatmap_end.png" 2>/dev/null
+            else
+                echo '{"passed":false,"score":0,"threshold":0.95,"error":"SSIM compare crashed"}' > "$output_dir/result_ssim_end.json"
+            fi
         else
             echo "  Warning: no end baseline found, skipping end SSIM"
         fi
@@ -252,7 +274,7 @@ _verify_one() {
 
     # 7. 统一报告
     if [[ -f "$COMPARE_JAR" ]]; then
-        local report_args=(--report --manifest "$vf_dir/manifest.json" --output "$output_dir")
+        local report_args=(--report --scenario "$scenario_name" --manifest "$vf_dir/manifest.json" --output "$output_dir")
         [[ -f "$output_dir/result_ssim_start.json" ]] && report_args+=(--ssim-start "$output_dir/result_ssim_start.json")
         [[ -f "$output_dir/result_ssim_end.json" ]] && report_args+=(--ssim-end "$output_dir/result_ssim_end.json")
         java -jar "$COMPARE_JAR" "${report_args[@]}"
@@ -295,7 +317,7 @@ verify() {
 
     for vf_dir in "${vf_dirs[@]}"; do
         local scenario
-        scenario=$(jq -r '.name // "unknown"' "$vf_dir/manifest.json" 2>/dev/null || echo "unknown")
+        scenario=$(resolve_scenario_name "$vf_dir")
         local idx=$((passed_count + failed_count + error_count + 1))
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo "  [$idx/$total] $scenario"
@@ -391,9 +413,10 @@ verify() {
 
     # ─── error_out: 失败用例截图对比目录 ──────────────────
 
+    local err_dir="${batch_dir}/error_out"
+    rm -rf "$err_dir"
+
     if [[ ${#failed_vf_dirs[@]} -gt 0 ]]; then
-        local err_dir="${batch_dir}/error_out"
-        rm -rf "$err_dir"
         mkdir -p "$err_dir"
         for vf_dir in "${failed_vf_dirs[@]}"; do
             local dir_name
