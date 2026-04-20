@@ -10,6 +10,7 @@ source: project-rules
 
 ## Action
 
+- 分析或解读 `[PERF:*]` 日志时，必须先读 `docs/PERF_MONITOR.md` 对照字段含义，禁止凭通用知识推断
 - 列表操作禁止 `+`/`dropLast`/`takeLast`，用 `ArrayDeque` + `toList()`（仅在数据变更时调用）
 - OBO（One-By-One）是主线程调度器，`oboLaunch`/`OBOScheduler.post` 均在主线程执行，不是后台线程
 - Effect 统一用 `OBOLaunchedEffect`（`core.compose`），避免低端设备卡顿

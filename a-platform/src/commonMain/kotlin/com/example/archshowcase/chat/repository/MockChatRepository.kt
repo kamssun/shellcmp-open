@@ -52,11 +52,11 @@ class MockChatRepository : ChatRepository, KoinComponent, AutoCloseable {
     override val totalUnread: Flow<Long> = dao.observeTotalUnread()
 
     init {
-        seedData()
-        // 压测自动启动：STRESS_CONFIG 非 null 时执行
-        STRESS_CONFIG?.let { config ->
-            scope.launch {
-                delay(3000) // 等 UI 就绪
+        scope.launch {
+            seedData()
+            // 压测自动启动：STRESS_CONFIG 非 null 时执行
+            STRESS_CONFIG?.let { config ->
+                delay(3000)
                 startStressTest(config)
             }
         }
