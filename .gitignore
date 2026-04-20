@@ -3,6 +3,7 @@
 .gradle
 .settings
 **/build/
+**/bin/
 xcuserdata
 !src/**/build/
 local.properties
@@ -22,6 +23,7 @@ node_modules/
 *.project
 *.classpath
 .worktree-meta.json
+.vscode/
 iosApp/Podfile.lock
 iosApp/Pods/
 iosApp/iosApp.xcworkspace/
