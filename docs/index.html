@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文档 — ArchShowcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+:root { --accent: var(--green); --accent-dim: var(--green-dim); }
+.index-hero {
+  max-width: 860px; margin: 0 auto;
+  padding: 72px 40px 48px;
+}
+.index-hero h1 { font-size: clamp(28px,4vw,42px); font-weight:700; letter-spacing:-0.02em; margin-bottom:12px; }
+.index-hero h1 span { color: var(--green); }
+.index-hero p { color: var(--text2); font-size:16px; }
+.index-grid {
+  max-width: 860px; margin: 0 auto;
+  padding: 0 40px 80px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+}
+.doc-entry {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 24px;
+  text-decoration: none; color: inherit;
+  display: flex; align-items: flex-start; gap: 16px;
+  transition: border-color 0.2s, transform 0.2s;
+  position: relative;
+}
+.doc-entry:hover { transform: translateY(-2px); }
+.doc-entry.green:hover { border-color: oklch(0.76 0.18 155 / 0.5); }
+.doc-entry.blue:hover { border-color: oklch(0.68 0.17 248 / 0.5); }
+.doc-entry.purple:hover { border-color: oklch(0.70 0.17 295 / 0.5); }
+.doc-entry.orange:hover { border-color: oklch(0.74 0.16 55 / 0.5); }
+.doc-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.green .doc-icon { background: var(--green-dim); }
+.blue .doc-icon { background: var(--blue-dim); }
+.purple .doc-icon { background: var(--purple-dim); }
+.orange .doc-icon { background: var(--orange-dim); }
+.doc-entry-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.doc-entry-desc { font-size: 13px; color: var(--text2); line-height: 1.55; }
+.doc-entry-arrow {
+  position: absolute; top: 20px; right: 20px;
+  font-size: 13px; color: var(--text3);
+  transition: transform 0.2s, color 0.2s;
+}
+.doc-entry:hover .doc-entry-arrow { transform: translate(2px,-2px); color: var(--text2); }
+.doc-entry-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.doc-entry-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; padding: 2px 7px; border-radius: 4px; border: 1px solid var(--border); color: var(--text3);
+}
+.doc-entry.wide { grid-column: span 2; }
+.section-head {
+  max-width: 860px; margin: 0 auto;
+  padding: 0 40px 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--text3);
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+@media (max-width: 700px) {
+  .index-grid { grid-template-columns: 1fr; padding: 0 20px 60px; }
+  .doc-entry.wide { grid-column: span 1; }
+  .index-hero { padding: 48px 20px 32px; }
+  .section-head { padding-left: 20px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="doc-nav">
+  <a href="../index.html" class="doc-nav-back">← ArchShowcase</a>
+  <span class="doc-nav-sep">/</span>
+  <span class="doc-nav-title">文档</span>
+  <span class="doc-nav-badge">10 篇</span>
+</nav>
+
+<div class="index-hero">
+  <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;"><span style="display:block;width:20px;height:1px;background:var(--green);"></span>ArchShowcase 文档</div>
+  <h1>深入每一个<br><span>核心系统</span></h1>
+  <p>从 MVI 状态回溯到 AI 全自动验证，每篇文档都包含原理、代码示例和实际效果验证。</p>
+</div>
+
+<div class="section-head">核心系统</div>
+<div class="index-grid">
+
+  <a href="pages/state-restore.html" class="doc-entry green wide">
+    <div class="doc-icon">⏪</div>
+    <div>
+      <div class="doc-entry-title">MVI 状态回溯 — 一切的基石</div>
+      <div class="doc-entry-desc">严格单向数据流天然产出完整操作历史。交互回溯、开发书签、线上 Bug 一键复现、VF 验证——全部建立在这个基石上。</div>
+      <div class="doc-entry-tags"><span class="doc-entry-tag">@Replayable</span><span class="doc-entry-tag">KSP 代码生成</span><span class="doc-entry-tag">时间旅行</span><span class="doc-entry-tag">开发书签</span></div>
+    </div>
+    <span class="doc-entry-arrow">↗</span>
+  </a>
+
+  <a href="pages/vf-validation.html" class="doc-entry blue">
+    <div class="doc-icon">🤖</div>
+    <div>
+      <div class="doc-entry-title">VF 全自动验证</div>
+      <div class="doc-entry-desc">零手写断言的全链路回归。录制操作路径 + 服务端快照，验证时重放并对比截图。比传统 E2E 快一个量级。</div>
+      <div class="doc-entry-tags"><span class="doc-entry-tag">SSIM 截图对比</span><span class="doc-entry-tag">AI 自动录制</span><span class="doc-entry-tag">服务端固化</span></div>
+    </div>
+    <span class="doc-entry-arrow">↗</span>
+  </a>
+
+  <a href="pages/obo-dispatcher.html" class="doc-entry orange">
+    <div class="doc-icon">⏱️</div>
+    <div>
+      <div class="doc-entry-title">OBO 调度器</div>
+      <div class="doc-entry-desc">队列永远只有一个任务，消除消息积压。同时让每个任务成为独立消息，性能监控精准定位"就是这个 SDK 慢了 51ms"。</div>
+      <div class="doc-entry-tags"><span class="doc-entry-tag">ASM 字节码改写</span><span class="doc-entry-tag">来源级诊断</span><span class="doc-entry-tag">三方 SDK 拦截</span></div>
+    </div>
+    <span class="doc-entry-arrow">↗</span>
+  </a>
+
+  <a href="pages/perf-monitor.html" class="doc-entry purple">
+    <div class="doc-icon">📊</div>
+    <div>
+      <div class="doc-entry-title">全链路性能诊断</div>
+      <div class="doc-entry-desc">STARTUP / JANK / GC / PAGE 四套日志，FrameMetrics 6 阶段帧拆解，btrace + AI 自动分析 trace 数据。</div>
+      <div class="doc-entry-tags"><span class="doc-entry-tag">启动时间线</span><span class="doc-entry-tag">帧拆解</span><span class="doc-entry-tag">btrace</span></div>
+    </div>
+    <span class="doc-entry-arrow">↗</span>
+  </a>
+
+  <a href="pages/auto-tracking.html" class="doc-entry green">
+    <div class="doc-icon">📍</div>
+    <div>
+      <div class="doc-entry-title">全自动埋点</div>
+      <div class="doc-entry-desc">四类事件全自动采集，零手写埋点代码。KSP 自动映射 Intent，三层脱敏，曝光追踪精确到 500ms 停留。</div>
+      <div class="doc-entry-tags"><span class="doc-entry-tag">KSP 自动映射</span><span class="doc-entry-tag">曝光追踪</span><span class="doc-entry-tag">三层脱敏</span></div>
+    </div>
+    <span class="doc-entry-arrow">↗</span>
+  </a>
+
+  <a href="pages/ksp-codegen.html" class="doc-entry blue">
+    <div class="doc-icon">⚙️</div>
+    <div>
+      <div class="doc-entry-title">KSP 代码生成</div>
+      <div class="doc-entry-desc">4 个注解消除大量重复代码。新增带回溯 + 验证的页面 = 写业务代码 + 标两个注解，其余全部自动生成。</div>
+      <div class="doc-entry-tags"><span class="doc-entry-tag">@Replayable</span><span class="doc-entry-tag">@RouteRegistry</span><span class="doc-entry-tag">@VfResolvable</span><span class="doc-entry-tag">@CustomState</span></div>
+    </div>
+    <span class="doc-entry-arrow">↗</span>
+  </a>
+
+  <a href="pages/custom-ui.html" class="doc-entry orange">
+    <div class="doc-icon">🎨</div>
+    <div>
+      <div class="doc-entry-title">自定义 UI + 极少重组</div>
+      <div class="doc-entry-desc">去 Material3，自建轻量组件。智能跳过、延迟读取、计算缓存三策略联动，只有数据真正变化才重组。</div>
+      <div class="doc-entry-tags"><span class="doc-entry-tag">稳定性声明</span><span class="doc-entry-tag">延迟读取</span><span class="doc-entry-tag">derivedStateOf</span></div>
+    </div>
+    <span class="doc-entry-arrow">↗</span>
+  </a>
+
+  <a href="pages/ai-spec.html" class="doc-entry purple">
+    <div class="doc-icon">🛡️</div>
+    <div>
+      <div class="doc-entry-title">AI 规范体系</div>
+      <div class="doc-entry-desc">34 条禁止项 + 分层规则，AI 编码时实时约束。不是写完再 review，而是写的时候就不让犯错。</div>
+      <div class="doc-entry-tags"><span class="doc-entry-tag">渐进式加载</span><span class="doc-entry-tag">OpenSpec</span><span class="doc-entry-tag">提交前检查</span></div>
+    </div>
+    <span class="doc-entry-arrow">↗</span>
+  </a>
+
+</div>
+
+<div class="section-head" style="margin-top:8px;">工程质量 & 方案选型</div>
+<div class="index-grid">
+
+  <a href="pages/testing.html" class="doc-entry green">
+    <div class="doc-icon">✅</div>
+    <div>
+      <div class="doc-entry-title">测试体系</div>
+      <div class="doc-entry-desc">五层防线：单元测试 → 覆盖率门禁（≥80%）→ Preview 截图 → VF 全自动 → Maestro E2E，全部自动化。</div>
+      <div class="doc-entry-tags"><span class="doc-entry-tag">Kover ≥80%</span><span class="doc-entry-tag">Roborazzi</span><span class="doc-entry-tag">Maestro</span></div>
+    </div>
+    <span class="doc-entry-arrow">↗</span>
+  </a>
+
+  <a href="pages/cross-platform.html" class="doc-entry blue">
+    <div class="doc-icon">⚖️</div>
+    <div>
+      <div class="doc-entry-title">跨端方案对比</div>
+      <div class="doc-entry-desc">KMP+CMP vs 单平台 + AI 复刻。实测数据 + 行业验证 + 痛点诚实面对。</div>
+      <div class="doc-entry-tags"><span class="doc-entry-tag">实测 >90% 共享</span><span class="doc-entry-tag">行业采用</span><span class="doc-entry-tag">KMP 痛点</span></div>
+    </div>
+    <span class="doc-entry-arrow">↗</span>
+  </a>
+
+</div>
+
+</body>
+</html>
