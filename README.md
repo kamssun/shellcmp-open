@@ -1,18 +1,20 @@
 # ArchShowcase
 
-KMP 跨平台 App 外壳项目（Android / iOS / Desktop）。
+> **🎨 [查看精美展示页](https://kamssun.github.io/shellcmp-open/)** — 获得更好的阅读体验
+
+KMP 跨平台 App 外壳项目（Android / iOS / Desktop），共享 99% 代码。
 
 ## 🎥 视频演示
 
-- [💻 Desktop 热重载演示](https://github.com/user-attachments/assets/ac1d9b98-64d5-4a18-8b31-c4d0310b704c) - 改代码秒级生效，极大提升开发效率
-- [⏪ MVI 状态回溯演示](https://github.com/user-attachments/assets/4f834f16-a44f-4448-baa0-48c0496d8768) - 时间旅行与开发书签功能
-- [⏱️ OBO 调度器演示](https://github.com/user-attachments/assets/382f5490-8390-4a8d-aaf1-234ae785181c) - 解决消息积压，保证长列表极度流畅
-- [🤖 VF 自动化回归演示](https://github.com/user-attachments/assets/9cd654b1-b219-4878-8a59-df023b9c9c90) - 零手写断言的全链路 UI/逻辑验证
-- [💬 极限并发微信消息模拟演示](https://github.com/user-attachments/assets/0b2052ac-f67d-478c-a751-1024f0d23ee7) - 彻底打通渲染瓶颈与并发压力，保持丝滑体验
+| 演示 | 说明 |
+|------|------|
+| [💻 Desktop 热重载](https://github.com/user-attachments/assets/ac1d9b98-64d5-4a18-8b31-c4d0310b704c) | 改代码秒级生效 |
+| [⏪ MVI 状态回溯](https://github.com/user-attachments/assets/4f834f16-a44f-4448-baa0-48c0496d8768) | 时间旅行与开发书签 |
+| [⏱️ OBO 调度器](https://github.com/user-attachments/assets/382f5490-8390-4a8d-aaf1-234ae785181c) | 解决消息积压，保持流畅 |
+| [🤖 VF 自动化回归](https://github.com/user-attachments/assets/9cd654b1-b219-4878-8a59-df023b9c9c90) | 零手写断言的全链路验证 |
+| [💬 极限并发模拟](https://github.com/user-attachments/assets/0b2052ac-f67d-478c-a751-1024f0d23ee7) | 微信级消息洪峰丝滑体验 |
 
-> 💡 **注：以上视频均在 Pixel 4a 的 Debug 环境下录制，Release 包的性能与流畅度更佳。**
-
-[Read this in English](README_en.md)
+> 以上均在 Pixel 4a Debug 环境录制，Release 包性能更佳
 
 ## 架构
 
@@ -35,204 +37,30 @@ KMP 跨平台 App 外壳项目（Android / iOS / Desktop）。
  新增页面只改 Kotlin，三端同时获得
 ```
 
-## 模块
-
-| 模块 | 职责 |
-|------|------|
-| `a-core` | 基础设施：DI、调度器、状态回溯 / 泄漏审计 / SSIM 截图验证 |
-| `a-platform` | 平台 SDK 桥接：Auth、Pay、IM、RTC、归因、NetworkRecorder |
-| `a-shared` | 共享 UI 与业务（Compose Multiplatform）：MVI + i18n |
-| `ksp-annotations` / `ksp-processor` | `@Replayable` / `@CustomState` / `@MemoryTrackable` / `@RouteRegistry` / `@VfResolvable` 代码生成 |
-| `build-plugin` | Gradle 构建插件：ASM 字节码改写三方 SDK Handler 调用，收束到 OBO 调度器 |
-| `androidApp` / `iosApp` / `desktopApp` | 平台入口 |
-| `macrobenchmark` | Baseline Profile 生成 + 启动基准测试（Android） |
-| `tools/btrace` | btrace (RheaTrace) 3.0 性能追踪工具 |
-| `tools/verify` | VF 截图回归：SSIM 对比引擎 + 录制 / 验证脚本 |
-
 ## 技术栈
 
 Kotlin 2.3 · Compose Multiplatform · Decompose · MVIKotlin · Koin · Ktor · KSP
 
-## 构建
+## 快速开始
 
 ```bash
-./gradlew :androidApp:assembleDebug        # Android
-./gradlew :desktopApp:run                  # Desktop
-open iosApp/iosApp.xcworkspace             # iOS (Xcode)
+./gradlew :androidApp:assembleDebug   # Android
+./gradlew :desktopApp:run             # Desktop（支持热重载）
+open iosApp/iosApp.xcworkspace        # iOS (Xcode)
 ```
-
-## 为什么这套架构值得投入
-
-**一个人维护三个平台，质量不降反升。** 下面每个能力不是孤立的技术亮点，它们互相增强形成飞轮：MVI 的确定性让状态回溯成为可能 → 回溯让 VF 全自动验证成为可能 → VF 覆盖率越高 bug 越少 → 性能监控保证不卡顿 → 全自动埋点让数据采集零成本 → KSP 代码生成降低接入门槛 → AI 规范体系让新人也写不出烂代码。
-
-### 一份代码，三端交付
-
-新增页面只改 Kotlin，Android / iOS / Desktop 同时获得。bug 修一次，三端同时生效，不存在"Android 修了 iOS 忘了"。
-
-**Desktop 的真正价值是开发效率**：Desktop 支持热重载（Hot Recomposition），改一行代码秒级生效，不需要像 Android 那样等编译、安装、重启 App。日常开发在 Desktop 上快速迭代 UI 和逻辑，确认没问题后再到真机验证，开发体验接近前端的热更新。
-
-对比行业常规做法：养 Android + iOS 两个团队，维护两套代码，每个功能写两遍，每个 bug 修两遍，两端行为不一致是常态。这套架构用一个人做到三端一致。
-
-详见 [跨端方案对比](docs/CROSS_PLATFORM_ANALYSIS.md)
 
 ## 核心能力
 
-### MVI 状态回溯 — 一切的基石
-
-严格的单向数据流架构天然产出完整的操作历史——每一次用户操作都被记录，状态变化完全可追溯、可重放。这个特性是后续所有高级能力的根基：
-
-- **交互回溯** — 自动记录所有操作，支持按时间线回放到任意时刻，像录像带一样快进快退
-- **状态导出/导入** — 导出当前所有界面状态为文件，可跨设备还原现场。**线上问题复现**：用户遇到 bug 时导出状态文件发给开发，开发一键导入就能看到用户当时的完整界面，不用再猜"用户到底做了什么操作"
-- **开发书签** — 一键保存当前界面，重启后直达深层页面（如第三级设置页），省去反复手动点击导航，极大加速开发调试
-- **泄漏审计** — 自动检测页面销毁后状态是否正确释放
-- **全自动验证的底座** — 下面的 VF 验证系统、录制系统、服务端数据固化，全部建立在 MVI 的确定性之上——没有这个基石，后面的一切都不可能实现
-
-详见 [状态回溯](docs/STATE_RESTORE.md)
-
-### AI 全自动验证（VF）
-
-不只是 UI 截图对比——**任何导致界面变化的 bug 都会被捕获**。VF 录制的是完整的用户操作路径 + 服务端数据快照，验证时原样重放并对比截图。所以不仅 UI 样式问题，主路径的逻辑 bug（数据计算错误、状态流转异常、条件分支走错）只要最终反映到界面上，都会被发现。当所有关键路径都被录制覆盖时，理论上等于一套零手写断言的全量回归测试。
-
-**比传统端到端测试快一个量级**：传统方案靠"找控件 → 点按钮 → 等动画 → 再找控件"，每一步都有查找和等待开销。VF 基于 MVI 架构，直接向业务层注入操作指令重放，不需要模拟触摸、不需要遍历界面元素、不需要等动画结束——状态恢复和指令重放都是纯内存操作，只在最终截图时才涉及渲染。未来还可以进一步优化为只对比最终状态而跳过中间渲染，速度天花板远高于任何基于 UI 自动化的方案。
-
-工作流程：
-
-1. **变更分析** — AI 自动分析代码改动，找出受影响的测试用例，标记未被覆盖的新功能
-2. **路径推断** — 读取业务代码，自动枚举所有交互路径，生成操作计划
-3. **自动录制** — AI 操控真机模拟用户操作完成录制，无需人工干预
-4. **截图验证** — 自研图像相似度引擎对比截图 + 差异热力图，自动判断是否存在意外变化
-5. **服务端数据固化** — 录制时自动抓取网络请求/响应，验证时直接回放录制数据，彻底消除后端数据变化和网络环境差异的干扰
-
-录制支持两种方式：**AI 自动录制**（一个命令搞定）和**手动录制**（App 内浮窗点击开始/结束）。AI 录制覆盖大部分场景；遇到复杂交互或 AI 录制效果不理想时，手动录制一次即可永久保存，后续验证同样全自动。
-
-详见 [VF 验证](tools/verify/README.md) · [VF 录制领域知识](docs/vf-recording-guide.md)
-
-### OBO 调度器 — 不卡顿 + 让性能问题可定位
-
-自研任务调度器，解决两个核心问题：
-
-**问题一：消息积压导致卡顿。** 没有 OBO 时，大量异步任务同时提交到主线程队列，队列瞬间堆满。Android 系统虽然有屏障消息机制（让渲染帧优先执行），但屏障只能跳过队列中等待的任务，**无法打断正在执行的任务，也无法阻止已经堆满队列的同步消息被逐个执行**。结果：渲染帧虽然优先级高，但前面积压了几十个任务，等轮到它时早已掉帧。
-
-OBO 的做法：队列里**永远最多只有一个任务**。当前任务执行完后才提交下一个。VSYNC 到达时队列几乎是空的，屏障机制正常生效，渲染帧顺畅执行。
-
-**问题二：卡顿了但不知道谁慢。** 没有 OBO 时，几十个任务挤在一起执行，性能监控只能看到"这一批加起来耗时 200ms"，无法区分具体是哪个任务慢。有了 OBO，每个任务是独立的消息，监控能精准报告"任务 X 耗时 50ms"——**OBO 是性能监控能精准定位的前提。**
-
-- **效果** — 同样的工作量（30 个列表项 × 10 个任务 × 3ms），原生方式全部并发会卡死，OBO 逐个执行保持流畅滚动
-- **极限并发模拟（微信级消息洪峰）** — 在内部搭建了极高压力的 IM 消息并发场景（如 1000 个群聊同时活跃，单群每秒超高频刷屏），结合 OBO 调度器、分片 Flush 背压机制以及精确的渲染更新策略，在疯狂并发下依然保持长列表与聊天窗口丝滑流畅，彻底突破并发渲染瓶颈。
-- **内置对比界面** — 压测页面带实时帧率指示器 + 可调参数，一键切换 OBO / 原生模式，效果差异肉眼可见
-- **三端统一** — Android / iOS / Desktop 各自适配
-- **三方 SDK Handler 拦截** — OBO 只能管住自己的代码，但三方 SDK（IM / 支付 / 归因等）直接调 `Handler.post/send` 往主线程塞消息，绕过了 OBO 队列，照样造成积压。解决：编译期 ASM 字节码改写，将三方 SDK 的 Handler 调用自动收束到 OBO，无需 SDK 配合。黑名单排除系统框架（`androidx.*`、`kotlinx.coroutines.*` 等），只拦截业务 SDK。拦截报告见 `build/reports/obo-handler/`
-- **来源级卡顿诊断** — ASM 改写时同步注入调用方完整类名，运行时追踪每个任务的来源和执行耗时。三种检测：单个任务超半帧（慢任务）、某来源 1s 内累计执行超 100ms（高频灌入）、队列深度超 512（堆积预警）。JANK 日志中 OBO 慢任务逐条展示完整来源（如 `OBOScheduler com.thirdparty.im.sdk.IMClient 51ms`）；短任务场景通过帧汇总补位（按耗时降序）。Release 下不受 R8 混淆影响
-
-**取舍**：OBO 让整批任务的总完成时间变长（任务之间插入了帧回调），但单个任务速度不变。用户不会感知"30 个后台任务 2 秒完成还是 1 秒完成"，但一定会感知"滑动时卡了 1 秒"。流畅优先于速度，这是正确的取舍——OBO Demo 对比界面可以直观验证。
-
-注意：OBO 防止消息积压，但如果单个任务本身就很重（比如 50ms），该卡还是卡——OBO 自带诊断能力（`enableOBODiagnostics`）精确定位到具体是哪个 SDK / 哪段业务代码导致的，详见 [OBO Handler 拦截](docs/OBO_HANDLER_INTERCEPT.md)。
-
-### 全链路性能诊断闭环
-
-自研运行时性能监控，不依赖第三方，覆盖三端。OBO 保证了每个任务是独立消息，所以监控能精准定位到具体是哪个任务拖慢了主线程：
-
 | 能力 | 说明 |
 |------|------|
-| 启动时间线 | 树形展示 App 启动每一步耗时（进程创建 → 依赖注入 → SDK 初始化 → 首帧渲染），哪一步慢一目了然 |
-| 卡顿诊断 | 自动检测掉帧，同时采集：内存回收停顿、**CPU 使用率**（一眼看出是代码太重还是被其他任务抢占）、卡顿瞬间用户正在做什么操作 |
-| GC 压力检测 | 5s 滑动窗口监控 blocking GC，超阈值时输出 PSS 内存分解 + 各 Store 集合大小快照（KSP `@MemoryTrackable` 自动生成），快速定位内存膨胀源 |
-| 主线程慢任务监控 | 因为 OBO 让每个任务独立成消息，监控能逐个捕获超阈值的任务并上报（如网络回调、数据库操作、业务逻辑），精准到"就是这个任务慢了 50ms"，而非"这一堆加起来慢了" |
-| 帧拆解 + trace 对齐 | 每一帧自动拆解为 6 个阶段（排队 → 动画 → 布局 → 绘制 → 同步 → GPU），并且通过帧号与 btrace 火焰图精确对齐——日志告诉你"哪个阶段慢"，trace 告诉你"慢在哪个函数"，两者联动定位根因 |
-| 页面帧统计 | 每个页面离开时自动汇总：平均帧率、掉帧数、卡顿次数 |
-| btrace + AI 分析 | 字节 btrace 抓取函数级耗时，debug 包直接可读；release 包自动反混淆——不仅还原 btrace 插桩部分，还覆盖系统运行时采样的函数、编译器内联链、协程 lambda、跨包合并类等深度优化后的函数名，确保 release 包的 trace 和 debug 一样可读 → AI 自动分析 trace 数据并结合源码给出优化建议 |
-| 启动基准测试 | 自动生成预编译规则 + 启动耗时基准测试，量化优化前后效果 |
+| MVI 状态回溯 | 交互回溯、开发书签、线上 Bug 一键复现 |
+| VF 全自动验证 | AI 驱动的零手写断言回归测试 |
+| OBO 调度器 | 消除消息积压，精准定位性能瓶颈 |
+| 全链路性能诊断 | 启动时间线、卡顿诊断、btrace + AI 分析 |
+| 全自动埋点 | 四类事件自动采集，三层脱敏 |
+| KSP 代码生成 | 4 个注解消除重复代码 |
+| 自定义 UI | 去 Material3，极少重组 |
 
-详见 [性能监控指南](docs/PERF_MONITOR.md) · [btrace 使用指南](tools/btrace/README.md)
+👉 **[查看完整文档](https://kamssun.github.io/shellcmp-open/)** 了解每个能力的原理和实现
 
-### 全自动埋点 — 零手写代码的数据采集
-
-四类事件（页面、交互、曝光、前后台）全自动采集，开发者写业务代码时不需要关心埋点：
-
-| 能力 | 做法 |
-|------|------|
-| 交互采集 | 所有点击/长按/开关统一走 `appClickable` 系列 Modifier，自动捕获用户操作并关联到 Store Intent |
-| 曝光采集 | `ExposureLazyColumn` 替代 `LazyColumn`，自动追踪列表项可见面积 ≥50% 且停留 ≥500ms 的曝光事件，同页去重 |
-| KSP 自动映射 | `EventMapperProcessor` 无注解全量扫描所有 Store 的 `sealed interface Intent`，自动生成 Intent → 事件名的映射，新增 Intent 零配置即可上报 |
-| 业务参数提取 | `ExposureParamsProcessor` 无注解全量扫描 data class，自动生成 `toExposureParams()` 扩展，列表曝光自动携带业务字段 |
-| 三层脱敏 | KSP 编译期字段名匹配（排除 url/token/password，哈希 email/phone）→ 运行时正则检测（手机号/邮箱掩码）→ 长度截断（>200 字符） |
-
-效果：新增一个带埋点的列表页 = 用 `ExposureLazyColumn` + `appClickable`，不写任何埋点代码，事件名、业务参数、脱敏全部自动完成。
-
-详见 [全自动埋点](docs/AUTO_TRACKING.md)
-
-### 自定义 UI 组件 + 极少界面刷新
-
-移除 Google 官方 Material3 组件库，自建轻量组件体系，大幅减少不必要的界面刷新：
-
-| 策略 | 做法 |
-|------|------|
-| 去 Material3 | 按钮、文字、卡片、导航栏等全部自研，去掉官方组件隐含的额外开销 |
-| 列表滚动优化 | 圆角等视觉效果用最轻量的方式实现，避免滚动时触发不必要的界面重算 |
-| 智能跳过 | 编译器自动判断"数据没变就不刷新"，配合稳定性声明让更多组件享受跳过优化 |
-| 延迟读取 | 动画、滚动等高频变化的值延迟到最后一刻才读取，跳过界面重算直接更新视觉效果 |
-| 计算缓存 | 排序、过滤、格式化等计算结果自动缓存，数据不变不重复计算 |
-
-**如何验证**：Android Studio 的 Running Devices + Layout Inspector 可以实时高亮正在刷新的组件。打开重组计数后，滚动列表、切换页面时可以直观看到：只有数据真正变化的组件才会刷新，其余组件全部跳过。这不是理论推导，是可以随时打开工具验证的。
-
-### KSP 代码生成 — 降低理解与接入成本
-
-四个注解消除大量重复代码，新功能只需加标注，不用手写胶水逻辑：
-
-| 注解 | 作用 |
-|------|------|
-| `@Replayable` | 自动生成状态导出代码，接入回溯体系零手写 |
-| `@RouteRegistry` | 新增页面只需加一行声明，路由注册代码自动生成 |
-| `@VfResolvable` | 新增业务模块只需一行注解，自动接入验证体系 |
-| `@CustomState` | 复合注解（= `@SelectableState` + `@MemoryTrackable`），一次标注同时生成字段订阅 + 内存快照 |
-
-效果：新增一个带回溯 + 全自动验证的页面 = 写业务代码 + 标两个注解，其余全部自动生成。
-
-**实际感受**：写新页面时完全不需要关心"回溯怎么接入"、"VF 怎么注册"、"路由怎么序列化"这些基础设施问题，标上注解就能用，心智负担极低。新人看到注解就知道这个模块具备哪些能力，不用翻文档理解接入流程。
-
-### AI 规范体系 — 新人也写不出烂代码
-
-34 条禁止项 + 分层规则体系，由 AI 在编码过程中实时约束，不是写完再 review，而是写的时候就不让犯错：
-
-- **禁止项自动拦截** — 不允许出现的代码模式（如主线程网络请求、硬编码密钥、内存泄漏写法）在编写时直接被阻止
-- **领域规则按需加载** — 改 UI 时自动加载 UI 规范，改网络时自动加载网络规范，不需要开发者记住所有规则
-- **提交前自动化检查** — 测试、代码检查、合规审查、文档检查全部通过后才允许提交，流程不可绕过
-
-意味着：团队扩张时，新人的代码质量不会拖后腿——规范不靠人记，靠系统保证。
-
-**OpenSpec — AI 驱动的复杂需求开发**
-
-跨模块大型需求通过 OpenSpec 结构化流程：AI 先生成提案 → 技术设计 → 任务拆解（可人工审核修改），再按 spec 逐步实现，设计意图不会在编码过程中走样。已落地 7 个复杂需求（设计系统、性能监控、开发书签、iOS 回溯、VF 录制等）。
-
-### 多层测试体系
-
-VF 全自动验证之外，传统测试同样完备，形成从快到慢、从细到粗的多层防线：
-
-| 层级 | 能力 | 速度 |
-|------|------|------|
-| 单元测试 | 三个模块（core / platform / shared）均有独立测试，Desktop 上跑无需设备 | 秒级 |
-| 覆盖率门禁 | Kover 聚合覆盖率 **≥80%** 硬性要求，低于阈值构建直接失败，不允许"先上线再补测试" | 秒级 |
-| Preview 截图对比 | Roborazzi 自动扫描所有 `@Preview`，JVM 上运行无需设备，新增 Preview 自动纳入覆盖。**关键：Preview 基于 Koin 启动完整的依赖注入环境**（DI + 导航 + i18n + 主题），不是假数据的静态预览，而是接近真实运行状态的组件渲染，截图对比的可信度远高于普通 Preview | 十秒级 |
-| VF 全自动验证 | 操作路径级回归，覆盖逻辑 + UI，服务端数据固化 | 分钟级 |
-| E2E 端到端 | Maestro 支持 Android + iOS 真机全流程测试 | 分钟级 |
-
-单元测试保证函数正确，覆盖率保证没有死角，Preview 截图保证组件视觉，VF 保证完整路径，E2E 保证真机真环境——五层叠加，每一层都有自动化，不靠人肉回归。
-
-详见 [测试指南](TESTING.md)
-
-## 性能分析
-
-```bash
-./gradlew :androidApp:generateBaselineProfile     # 生成 Baseline Profile（需连接设备 API 28+）
-./gradlew :macrobenchmark:connectedBenchmarkAndroidTest  # 启动基准测试
-```
-
-## 文档
-
-- [测试指南](TESTING.md)
-- [状态回溯](docs/STATE_RESTORE.md)
-- [全自动埋点](docs/AUTO_TRACKING.md)
-- [性能监控](docs/PERF_MONITOR.md)
-- [OBO Handler 拦截](docs/OBO_HANDLER_INTERCEPT.md)
-- [架构图谱](docs/codemaps/)
-- [跨端方案对比](docs/CROSS_PLATFORM_ANALYSIS.md) — KMP+CMP vs 单平台+AI 复刻
+[English](README_en.md)
