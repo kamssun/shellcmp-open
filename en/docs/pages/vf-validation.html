@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VF Fully Automated Validation — ArchShowcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<style>:root { --accent: var(--blue); --accent-dim: var(--blue-dim); }</style>
+</head>
+<body>
+
+<nav class="doc-nav">
+  <a href="../../index_en.html" class="doc-nav-back">← ArchShowcase</a>
+  <span class="doc-nav-sep">/</span>
+  <span class="doc-nav-title">VF Fully Automated Validation</span>
+  <span class="doc-nav-badge">tools/verify/README.md</span>
+</nav>
+
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <div class="sidebar-label">On This Page</div>
+    <div class="sidebar-links">
+      <a href="#concept" class="active">Core Concepts</a>
+      <a href="#workflow">Validation Workflow</a>
+      <a href="#record">Recording Methods</a>
+      <a href="#output">Output Artifacts</a>
+      <a href="#commands">Commands</a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">Other Docs</div>
+    <div class="sidebar-links">
+      <a href="../pages/state-restore.html" class="other">State Restore</a>
+      <a href="../pages/obo-dispatcher.html" class="other">OBO Dispatcher</a>
+      <a href="../pages/perf-monitor.html" class="other">Performance Monitor</a>
+      <a href="../pages/auto-tracking.html" class="other">Auto Tracking</a>
+      <a href="../pages/ai-spec.html" class="other">AI Spec System</a>
+      <a href="../pages/testing.html" class="other">Testing</a>
+    </div>
+  </aside>
+
+  <main class="doc-content">
+    <div class="doc-hero">
+      <div class="doc-eyebrow">AI Fully Automated Validation</div>
+      <h1>Zero Hand-Written Assertions<br><span>Full-Path Regression</span></h1>
+      <p>More than just UI screenshot comparison -- any bug that causes visual changes will be caught. Records complete user operation paths + server-side data snapshots, replays them as-is during validation and compares screenshots. An order of magnitude faster than traditional E2E.</p>
+      <div class="badge-row">
+        <span class="badge badge-blue">Operation Path Recording</span>
+        <span class="badge badge-green">SSIM Screenshot Comparison</span>
+        <span class="badge badge-purple">Server-Side Data Pinning</span>
+        <span class="badge badge-orange">AI Auto Recording</span>
+      </div>
+    </div>
+
+    <!-- CONCEPT -->
+    <div class="doc-section" id="concept">
+      <h2>Core Concepts</h2>
+
+      <div class="callout callout-blue">
+        <strong>More Than Screenshot Comparison</strong>
+        <p>VF records complete user operation paths + server-side data snapshots. Not only UI styling issues, but logic bugs on critical paths (data calculation errors, abnormal state transitions, wrong conditional branches) will be caught as long as they are ultimately reflected in the interface. When all critical paths are covered by recordings, it is theoretically equivalent to a full regression test suite with zero hand-written assertions.</p>
+      </div>
+
+      <h3>Why It Is an Order of Magnitude Faster Than Traditional E2E</h3>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-title">Traditional E2E</div>
+          <div class="card-desc">Find widget -> tap button -> wait for animation -> find next widget. Every step incurs lookup and wait overhead, constrained by rendering speed.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">VF Approach</div>
+          <div class="card-desc">Directly injects operation commands into the business layer for replay -- no need to simulate touches, traverse UI elements, or wait for animations. State restoration and command replay are pure in-memory operations; rendering is only involved when taking the final screenshot.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORKFLOW -->
+    <div class="doc-section" id="workflow">
+      <h2>Validation Workflow</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <h4>Change Analysis</h4>
+            <p>AI automatically analyzes code changes, identifies affected test cases, and flags new features not yet covered.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <h4>Path Inference</h4>
+            <p>Reads business code, automatically enumerates all interaction paths, and generates operation plans -- no manual test step definitions needed.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-body">
+            <h4>Auto Recording</h4>
+            <p>AI controls a real device to simulate user operations and complete recording, with no manual intervention needed. The recording result contains operation sequences + network snapshots.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">04</div>
+          <div class="step-body">
+            <h4>Screenshot Validation</h4>
+            <p>A custom-built SSIM image similarity engine compares screenshots and outputs difference heatmaps, automatically determining whether unexpected changes exist.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">05</div>
+          <div class="step-body">
+            <h4>Server-Side Data Pinning</h4>
+            <p>Automatically captures network requests/responses during recording; replays the recorded data directly during validation, completely eliminating interference from backend data changes and network environment differences.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECORD -->
+    <div class="doc-section" id="record">
+      <h2>Recording Methods</h2>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-title">🤖 AI Auto Recording</div>
+          <div class="card-desc">Done with a single command. AI automatically controls the device to complete recording, covering most common scenarios.</div>
+          <span class="card-tag">/update-vf</span>
+        </div>
+        <div class="card">
+          <div class="card-title">✋ Manual Recording</div>
+          <div class="card-desc">In the app, tap "Start Recording" on the TimeTravel floating widget -> perform operations -> "Stop Recording" -> save zip. Use when dealing with complex interactions or when AI results are unsatisfactory. Record once, and all subsequent validations are fully automated.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OUTPUT -->
+    <div class="doc-section" id="output">
+      <h2>Output Artifacts</h2>
+      <p>Validation results are output to <code>&lt;vf_dir&gt;/output/</code>, containing:</p>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>File</th><th>Content</th></tr></thead>
+          <tbody>
+            <tr><td><code>verify_a.png</code> / <code>verify_b.png</code></td><td class="desc">Before and after screenshots for comparison</td></tr>
+            <tr><td><code>result_ssim_start.json</code> / <code>result_ssim_end.json</code></td><td class="desc">SSIM similarity scores (0-1, higher means more similar)</td></tr>
+            <tr><td><code>diff_heatmap_start.png</code> / <code>diff_heatmap_end.png</code></td><td class="desc">Difference heatmaps highlighting areas where changes occurred</td></tr>
+            <tr><td><code>report.md</code></td><td class="desc">Full validation report with difference analysis and recommendations</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- COMMANDS -->
+    <div class="doc-section" id="commands">
+      <h2>Commands</h2>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Command</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>./gradlew verifyVf</code></td><td class="desc">Full VF validation</td></tr>
+            <tr><td><code>./gradlew verifyVf -Pvf.dir=&lt;path&gt;</code></td><td class="desc">Validate a specific directory</td></tr>
+            <tr><td><code>./gradlew cleanVerification</code></td><td class="desc">Clean validation artifacts (auto-triggered on <code>clean</code>)</td></tr>
+            <tr><td><code>tools/verify/verify-vf.sh</code></td><td class="desc">Full VF validation (shell script)</td></tr>
+            <tr><td><code>tools/verify/verify-vf.sh &lt;name&gt;</code></td><td class="desc">Validate a specific test case</td></tr>
+            <tr><td><code>/update-vf</code></td><td class="desc">AI controls phone + TimeTravel floating widget recording</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="doc-footer-nav">
+      <a href="../pages/auto-tracking.html">← Auto Tracking</a>
+      <a href="../pages/ai-spec.html" class="next"><span class="label">Next</span>AI Spec System →</a>
+    </div>
+  </main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('.doc-section');
+const links = document.querySelectorAll('.sidebar-links a:not(.other)');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.sidebar-links a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

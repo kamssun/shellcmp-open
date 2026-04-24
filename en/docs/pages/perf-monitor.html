@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Performance Monitoring — ArchShowcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<style>:root { --accent: var(--purple); --accent-dim: var(--purple-dim); }</style>
+</head>
+<body>
+
+<nav class="doc-nav">
+  <a href="../../index_en.html" class="doc-nav-back">← ArchShowcase</a>
+  <span class="doc-nav-sep">/</span>
+  <span class="doc-nav-title">Performance Monitoring</span>
+  <span class="doc-nav-badge">docs/PERF_MONITOR.md</span>
+</nav>
+
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <div class="sidebar-label">On This Page</div>
+    <div class="sidebar-links">
+      <a href="#overview" class="active">Log Overview</a>
+      <a href="#startup">Startup Timeline</a>
+      <a href="#jank">Jank Diagnosis</a>
+      <a href="#gc">GC Pressure</a>
+      <a href="#page">Page Frame Stats</a>
+      <a href="#trace">Trace Mapping</a>
+      <a href="#workflow">Debugging Workflow</a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">Other Docs</div>
+    <div class="sidebar-links">
+      <a href="../pages/state-restore.html" class="other">State Restore</a>
+      <a href="../pages/obo-dispatcher.html" class="other">OBO Dispatcher</a>
+      <a href="../pages/auto-tracking.html" class="other">Auto Tracking</a>
+      <a href="../pages/vf-validation.html" class="other">VF Auto Validation</a>
+      <a href="../pages/ai-spec.html" class="other">AI Spec System</a>
+      <a href="../pages/testing.html" class="other">Testing</a>
+    </div>
+  </aside>
+
+  <main class="doc-content">
+    <div class="doc-hero">
+      <div class="doc-eyebrow">Full-Stack Performance Diagnostics</div>
+      <h1>Every Frame<br><span>Has an Answer</span></h1>
+      <p>In-house runtime performance monitoring, zero third-party dependencies, covering all three platforms. From startup timeline to 6-phase per-frame breakdown, plus btrace + AI auto-analysis — every jank is traceable.</p>
+      <div class="badge-row">
+        <span class="badge badge-purple">Startup Timeline</span>
+        <span class="badge badge-orange">Jank Diagnosis</span>
+        <span class="badge badge-blue">Frame Breakdown</span>
+        <span class="badge badge-green">btrace + AI</span>
+      </div>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div class="doc-section" id="overview">
+      <h2>Log Overview</h2>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Tag</th><th>Level</th><th>Trigger</th></tr></thead>
+          <tbody>
+            <tr><td><code>[PERF:STARTUP]</code></td><td class="desc">I</td><td class="desc">Cold start completed</td></tr>
+            <tr><td><code>[PERF:JANK]</code></td><td class="desc">D/W/E</td><td class="desc">Frame drop detected (SLIGHT / MODERATE / SEVERE+)</td></tr>
+            <tr><td><code>[PERF:PAGE]</code></td><td class="desc">I</td><td class="desc">Summary on page exit</td></tr>
+            <tr><td><code>[PERF:PROFILE]</code></td><td class="desc">I</td><td class="desc">Baseline Profile compilation status</td></tr>
+            <tr><td><code>[PERF:GC_PRESSURE]</code></td><td class="desc">W/E</td><td class="desc">GC pressure exceeds threshold (WARN / SEVERE / CRITICAL)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- STARTUP -->
+    <div class="doc-section" id="startup">
+      <h2>STARTUP — Startup Timeline</h2>
+      <p>Tree-structured output where parent-child relationships are determined by <code>StartupTracer.traced()</code> nesting. Instantly see which step is slow.</p>
+      <div class="log-block">
+        <span class="log-tag">[PERF:STARTUP]</span> COLD <span class="log-blue">763ms</span><br>
+        &nbsp;&nbsp;├─ <span class="log-green">process_fork</span> 468ms (content_provider=24ms)<br>
+        &nbsp;&nbsp;├─ <span class="log-green">app_create</span> 146ms<br>
+        &nbsp;&nbsp;│&nbsp;&nbsp;├─ di_init 35ms<br>
+        &nbsp;&nbsp;│&nbsp;&nbsp;└─ <span class="log-blue">sdk_init</span> 105ms<br>
+        &nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─ sdk_auth 88ms<br>
+        &nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─ sdk_device_token 3ms<br>
+        &nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ sdk_im 14ms<br>
+        &nbsp;&nbsp;├─ system_activity_launch 18ms<br>
+        &nbsp;&nbsp;├─ <span class="log-green">activity_create</span> 65ms<br>
+        &nbsp;&nbsp;│&nbsp;&nbsp;├─ root_component 55ms<br>
+        &nbsp;&nbsp;│&nbsp;&nbsp;└─ compose_setup 10ms<br>
+        &nbsp;&nbsp;└─ <span class="log-green">first_frame</span> 27ms
+      </div>
+
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Phase</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>process_fork</code></td><td class="desc">Process start → attachBaseContext end (includes content_provider duration)</td></tr>
+            <tr><td><code>app_create</code></td><td class="desc">Application.onCreate business logic</td></tr>
+            <tr><td><code>di_init</code></td><td class="desc">Koin DI initialization</td></tr>
+            <tr><td><code>sdk_init</code></td><td class="desc">Third-party SDK initialization total</td></tr>
+            <tr><td><code>system_activity_launch</code></td><td class="desc">Application.onCreate end → Activity.onCreate start</td></tr>
+            <tr><td><code>first_frame</code></td><td class="desc">First frame render</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Adding a Startup Phase</h3>
+      <pre><span class="comment">// Application.kt or any startup path</span>
+StartupTracer.traced(<span class="str">"my_phase"</span>) {
+    <span class="comment">// business logic</span>
+}</pre>
+    </div>
+
+    <!-- JANK -->
+    <div class="doc-section" id="jank">
+      <h2>JANK — Jank Diagnosis</h2>
+      <p>Color-coded by severity: SLIGHT (blue) / MODERATE (yellow) / SEVERE+FROZEN (red).</p>
+      <div class="log-block">
+        <span class="log-tag">[PERF:JANK]</span> SEVERE <span class="log-blue">108ms</span> (11 dropped) route=ImageDemo #912 (+19)<br>
+        &nbsp;&nbsp;├─ Choreographer.doFrame 107ms<br>
+        &nbsp;&nbsp;├─ gc: 2x blocking 15ms, 3x concurrent 45ms<br>
+        &nbsp;&nbsp;├─ cpu: 100ms/108ms (92%)<br>
+        &nbsp;&nbsp;└─ intents: Push(route=ImageDemo), LoadInitial<br>
+        <span class="log-tag">[PERF:JANK]</span> #912 Choreographer.doFrame breakdown: <span class="log-green">delay 5ms | anim(recompose→apply) 30ms | layout 40ms | draw(m&l→canvas) 25ms | gpu 5ms</span> (total 108ms)
+      </div>
+
+      <h3>FrameMetrics doFrame 6-Phase Breakdown</h3>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Field</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>delay</code></td><td class="desc">Frame queuing wait (previous frame not finished / main thread busy)</td></tr>
+            <tr><td><code>anim(recompose→apply)</code></td><td class="desc">performRecompose (compute UI tree diff) + applyChanges (commit diff)</td></tr>
+            <tr><td><code>layout</code></td><td class="desc">View measure + layout (typically ~0ms in Compose)</td></tr>
+            <tr><td><code>draw(m&l→canvas)</code></td><td class="desc">measureAndLayout (Compose measure + layout) + LayoutNode.draw (Canvas recording)</td></tr>
+            <tr><td><code>sync</code></td><td class="desc">Main thread nativeSync (display list submitted to RenderThread, main thread blocks waiting)</td></tr>
+            <tr><td><code>gpu</code></td><td class="desc">RenderThread DrawFrame (API 31+)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>GC Row</h3>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Type</th><th>Description</th><th>Impact on Jank</th></tr></thead>
+          <tbody>
+            <tr><td><code>blocking</code></td><td class="desc">Stop-the-world GC, pauses all threads</td><td class="desc"><strong>High</strong>: time directly counts toward jank</td></tr>
+            <tr><td><code>concurrent</code></td><td class="desc">Concurrent GC, runs on background threads</td><td class="desc"><strong>Low</strong>: competes for CPU but does not pause main thread</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>CPU Row</h3>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>CPU%</th><th>Diagnosis</th></tr></thead>
+          <tbody>
+            <tr><td><code>&gt;80%</code></td><td class="desc">Code itself is heavy (complex rendering, CPU-intensive computation)</td></tr>
+            <tr><td><code>&lt;80%</code></td><td class="desc">Main thread preempted (lock contention / IO blocking / GC pause / CPU competition)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- GC -->
+    <div class="doc-section" id="gc">
+      <h2>GC_PRESSURE — GC Pressure Detection</h2>
+      <p>5s sliding window monitoring blocking GC. Score = (blockingGcTimeMs/sec) x (1 - freePercent/100). 10s cooldown to prevent log flooding.</p>
+      <div class="log-block">
+        <span class="log-tag">[PERF:GC_PRESSURE]</span> SEVERE pressure=<span class="log-blue">72.3</span> | 5 GC 180ms / 5s | heap 128/256MB (50% free)<br>
+        &nbsp;&nbsp;PSS: Java 48MB&nbsp;&nbsp;Native 32MB&nbsp;&nbsp;Code 12MB&nbsp;&nbsp;Stack 2MB&nbsp;&nbsp;Graphics 8MB<br>
+        &nbsp;&nbsp;<span class="log-green">ChatRoomStore</span><br>
+        &nbsp;&nbsp;├─ messageWindow.messages: <span class="log-blue">1200</span><br>
+        &nbsp;&nbsp;│&nbsp;&nbsp;└─ body: 1200<br>
+        &nbsp;&nbsp;└─ history: 850<br>
+        &nbsp;&nbsp;<span class="log-green">ConversationListStore</span><br>
+        &nbsp;&nbsp;└─ conversations: 500
+      </div>
+
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Level</th><th>Threshold</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">WARN</td><td><code>≥20</code></td><td class="desc">Mild pressure</td></tr>
+            <tr><td class="desc">SEVERE</td><td><code>≥60</code></td><td class="desc">Affects frame rate</td></tr>
+            <tr><td class="desc">CRITICAL</td><td><code>≥150</code></td><td class="desc">May trigger LMK</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Store collection size snapshots are auto-generated by KSP <code>@MemoryTrackable</code>, recursively counting Collection/Map <code>.size</code> — no manual code needed.</p>
+    </div>
+
+    <!-- PAGE -->
+    <div class="doc-section" id="page">
+      <h2>PAGE — Page Frame Stats</h2>
+      <p>Automatically summarized on page exit, no manual trigger needed.</p>
+      <div class="log-block">
+        <span class="log-tag">[PERF:PAGE]</span> route=Home stay=<span class="log-green">4830ms</span> fps=<span class="log-blue">95.1</span> frames=232 dropped=55 jank={slight:1}
+      </div>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Field</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>stay</code></td><td class="desc">Page dwell time</td></tr>
+            <tr><td><code>fps</code></td><td class="desc">Average frame rate</td></tr>
+            <tr><td><code>frames</code></td><td class="desc">Total frame count</td></tr>
+            <tr><td><code>dropped</code></td><td class="desc">Total dropped frames</td></tr>
+            <tr><td><code>jank</code></td><td class="desc">Jank count per severity level (slight / moderate / severe)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TRACE -->
+    <div class="doc-section" id="trace">
+      <h2>PERF Log ↔ Perfetto Trace Mapping</h2>
+      <p>Combined with Perfetto traces captured by btrace, PERF log aggregate data can be mapped to method-level slices.</p>
+
+      <div class="callout callout-purple">
+        <strong>Key Point: Compose Frame Rendering Model</strong>
+        <p>Compose bypasses the View system's onMeasure/onLayout, so the <code>layout</code> field is usually 0. <code>measureAndLayout</code> appears in two locations (inside ANIMATION callback + inside TRAVERSAL callback) — when analyzing traces, you must distinguish them by their parent chain.</p>
+      </div>
+
+      <h3>Example: Frame Breakdown Log vs Trace</h3>
+      <pre><span class="comment">Log: delay 21ms | anim(recompose→apply) 69ms | draw(m&l→canvas) 18ms | gpu 1ms</span>
+
+<span class="comment">Trace mapping:</span>
+doFrame 88ms
+├─ CallbackRecord.run (ANIMATION)
+│  └─ runRecomposeAndApplyChanges 69ms
+│     ├─ performRecompose 55ms       ← recomposition: compute UI tree diff
+│     └─ applyChanges 11ms          ← commit diff to SlotTable
+└─ TraversalRunnable (TRAVERSAL) ≈ draw 18ms
+   └─ performDraw
+      ├─ measureAndLayout 13ms       ← Compose measure + layout
+      └─ LayoutNode.draw ~5ms*       ← Canvas recording
+                                       *btrace collapses to 0ms
++ RenderThread Running 1.4ms         ≈ gpu 1ms</pre>
+
+      <div class="callout callout-orange">
+        <strong>btrace draw Duration Correction</strong>
+        <p>btrace collapses nested slices inside TraversalRunnable to the same duration, causing LayoutNode.draw to show 0ms. In Perfetto, compare the right edge of the slice with the right edge of thread_state Running — the difference is the swallowed duration.</p>
+      </div>
+    </div>
+
+    <!-- WORKFLOW -->
+    <div class="doc-section" id="workflow">
+      <h2>Debugging Workflow</h2>
+      <div class="flow">1. Check JANK logs to determine jank type
+   ├─ Choreographer.doFrame slow → rendering issue → check FrameMetrics breakdown
+   │  ├─ anim high → heavy recompose → check recomposition scope
+   │  ├─ draw high → measureAndLayout or Canvas recording heavy → simplify layout
+   │  └─ delay high → pipeline stall → previous frame too slow, causing queue
+   ├─ Other Message slow → main thread has expensive task → move to background thread
+   ├─ gc blocking → GC pause → reduce object allocation
+   ├─ cpu% low → main thread blocked → btrace stack capture to locate lock/IO
+   └─ No msg + cpu% low → thread scheduling delay / GC concurrent phase
+2. btrace captures method-level durations; in Perfetto, Ctrl+F search "PERF:JANK" to jump directly to the jank frame
+3. After fix, compare JANK logs to verify</div>
+    </div>
+
+    <div class="doc-footer-nav">
+      <a href="../pages/obo-dispatcher.html">← OBO Dispatcher</a>
+      <a href="../pages/auto-tracking.html" class="next"><span class="label">Next</span>Auto Tracking →</a>
+    </div>
+  </main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('.doc-section');
+const links = document.querySelectorAll('.sidebar-links a:not(.other)');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.sidebar-links a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

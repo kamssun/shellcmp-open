@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Custom UI + Minimal Recomposition — ArchShowcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<style>:root { --accent: var(--orange); --accent-dim: var(--orange-dim); }</style>
+</head>
+<body>
+
+<nav class="doc-nav">
+  <a href="../../index_en.html" class="doc-nav-back">← ArchShowcase</a>
+  <span class="doc-nav-sep">/</span>
+  <span class="doc-nav-title">Custom UI + Minimal Recomposition</span>
+  <span class="doc-nav-badge">a-shared / presentation</span>
+</nav>
+
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <div class="sidebar-label">On This Page</div>
+    <div class="sidebar-links">
+      <a href="#why" class="active">Why Drop Material3</a>
+      <a href="#skip">Smart Skipping</a>
+      <a href="#defer">Deferred Reading</a>
+      <a href="#cache">Computation Caching</a>
+      <a href="#list">List Optimization</a>
+      <a href="#verify">How to Verify</a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">Other Docs</div>
+    <div class="sidebar-links">
+      <a href="../pages/state-restore.html" class="other">State Restore</a>
+      <a href="../pages/obo-dispatcher.html" class="other">OBO Dispatcher</a>
+      <a href="../pages/perf-monitor.html" class="other">Perf Monitor</a>
+      <a href="../pages/ksp-codegen.html" class="other">KSP Code Generation</a>
+      <a href="../pages/vf-validation.html" class="other">VF Auto Validation</a>
+      <a href="../pages/ai-spec.html" class="other">AI Spec System</a>
+    </div>
+  </aside>
+
+  <main class="doc-content">
+    <div class="doc-hero">
+      <div class="doc-eyebrow">Custom UI</div>
+      <h1>Only Refresh When<br><span>Data Changes</span></h1>
+      <p>Removed Google's official Material3 component library and built a lightweight custom component system. Three strategies work together -- smart skipping, deferred reading, and computation caching -- ensuring only components whose data actually changed get recomposed while all others are skipped.</p>
+      <div class="badge-row">
+        <span class="badge badge-orange">Drop Material3</span>
+        <span class="badge badge-green">Smart Skipping</span>
+        <span class="badge badge-blue">Deferred Reading</span>
+        <span class="badge badge-purple">Computation Caching</span>
+      </div>
+    </div>
+
+    <!-- WHY -->
+    <div class="doc-section" id="why">
+      <h2>Why Drop Material3</h2>
+      <p>Google's official Material3 components provide convenient abstractions, but these abstractions introduce hidden recomposition overhead:</p>
+
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-title">Implicit State Subscriptions</div>
+          <div class="card-desc">Official components internally subscribe to multiple CompositionLocals (theme, color, shape). Any theme change triggers recomposition of all components, even when there is no visual change.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Over-Abstraction</div>
+          <div class="card-desc">Components like Button / Text / Card wrap multiple layers of Composables, each adding recomposition-check overhead. Lightweight custom components eliminate unnecessary layers.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Stability Declaration Difficulty</div>
+          <div class="card-desc">Many parameter types in official components lack @Stable annotations, preventing the compiler from inferring "skip recomposition if parameters are unchanged" and forcing conservative re-execution every time.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Full Control with Custom Components</div>
+          <div class="card-desc">Custom components give full control over stability declarations, allowing precise annotation of which parameters can trigger skip optimization, with recomposition scope narrowed down to the field level.</div>
+        </div>
+      </div>
+
+      <h3>Custom Component Coverage</h3>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Category</th><th>Custom Components</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">Interaction</td><td><code>AppButton / AppTextButton / AppOutlinedButton / AppIconButton</code></td></tr>
+            <tr><td class="desc">Selection</td><td><code>AppSwitch / AppFilterChip</code></td></tr>
+            <tr><td class="desc">Text</td><td><code>AppText</code> (stability declaration + minimal parameters)</td></tr>
+            <tr><td class="desc">Navigation</td><td><code>AppBottomNav / AppTopBar</code></td></tr>
+            <tr><td class="desc">Lists</td><td><code>ExposureLazyColumn</code> (with automatic exposure tracking)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SKIP -->
+    <div class="doc-section" id="skip">
+      <h2>Smart Skipping</h2>
+      <p>The Compose compiler inserts skip checks at the entry of every @Composable function: if all parameters are the same as last time, the entire function body is skipped without executing any code.</p>
+
+      <div class="callout callout-orange">
+        <strong>Prerequisite: Parameters Must Be Stable Types</strong>
+        <p>Skip optimization only takes effect when all parameters are annotated with @Stable or the compiler can infer them as stable. Unstable types force the compiler to conservatively re-execute every time.</p>
+      </div>
+
+      <h3>Stability Declaration Approaches</h3>
+      <pre><span class="comment">// Approach 1: @Stable annotation (for interfaces / abstract classes)</span>
+<span class="ann">@Stable</span>
+<span class="kw">interface</span> ImageItem {
+    <span class="kw">val</span> id: String
+    <span class="kw">val</span> url: String
+}
+
+<span class="comment">// Approach 2: @Immutable annotation (for immutable data)</span>
+<span class="ann">@Immutable</span>
+<span class="kw">data class</span> ImageCard(<span class="kw">val</span> id: String, <span class="kw">val</span> url: String)
+
+<span class="comment">// Approach 3: Stability Config (globally declare third-party types as stable)</span>
+<span class="comment">// compose_compiler_config.conf:</span>
+<span class="comment">// com.example.SomeThirdPartyClass</span></pre>
+    </div>
+
+    <!-- DEFER -->
+    <div class="doc-section" id="defer">
+      <h2>Deferred Reading</h2>
+      <p>Frequently changing values (animation progress, scroll offset) read in a parent component cause the parent to recompose often, dragging the entire subtree along. Deferred reading postpones reading these values to the last possible moment -- consuming them only during the draw phase and skipping the recomposition phase.</p>
+
+      <pre><span class="comment">// ❌ Wrong: reading animation value in parent, parent recomposes every frame</span>
+<span class="ann">@Composable</span>
+<span class="kw">fun</span> ParentCard(animProgress: Float) {
+    Box(Modifier.alpha(animProgress)) { <span class="comment">/* subtree recomposes every frame */</span> }
+}
+
+<span class="comment">// ✅ Correct: pass a lambda, defer reading to the draw phase</span>
+<span class="ann">@Composable</span>
+<span class="kw">fun</span> ParentCard(animProgress: () -> Float) {
+    Box(Modifier.graphicsLayer { alpha = animProgress() }) {
+        <span class="comment">/* subtree does not recompose, only graphicsLayer updates */</span>
+    }
+}</pre>
+
+      <div class="callout callout-green">
+        <strong>Applicable Scenarios</strong>
+        <p>Animation progress, scroll offset, real-time data (frame rate counters, etc.). These values change every frame and should not trigger recomposition -- they should be consumed during the draw phase via graphicsLayer / drawWithContent.</p>
+      </div>
+    </div>
+
+    <!-- CACHE -->
+    <div class="doc-section" id="cache">
+      <h2>Computation Caching (remember + derivedStateOf)</h2>
+      <p>Computations like sorting, filtering, and formatting that run on every recomposition can cause noticeable jank in long-list scenarios. Use <code>remember</code> and <code>derivedStateOf</code> to cache results so they are not recomputed when data has not changed.</p>
+
+      <pre><span class="comment">// ❌ Wrong: re-sorts on every recomposition</span>
+<span class="kw">val</span> sorted = items.sortedBy { it.timestamp }
+
+<span class="comment">// ✅ Correct: re-sorts only when items change</span>
+<span class="kw">val</span> sorted = remember(items) {
+    items.sortedBy { it.timestamp }
+}
+
+<span class="comment">// ✅ Better: derivedStateOf for fine-grained subscription</span>
+<span class="kw">val</span> unreadCount by remember {
+    derivedStateOf { messages.count { !it.isRead } }
+}
+<span class="comment">// unreadCount only updates when the unread count in messages changes</span></pre>
+
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Scenario</th><th>Recommended Approach</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">Sorting / Filtering (input is the entire list)</td><td><code>remember(key) { ... }</code></td></tr>
+            <tr><td class="desc">Derived count / boolean (input is State)</td><td><code>derivedStateOf { ... }</code></td></tr>
+            <tr><td class="desc">String formatting (input is a data field)</td><td><code>remember(field) { format(field) }</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LIST -->
+    <div class="doc-section" id="list">
+      <h2>List Scroll Optimization</h2>
+      <p>During long list scrolling, how visual effects are implemented has a significant impact on recomposition frequency.</p>
+
+      <pre><span class="comment">// ❌ Wrong: clip + shape triggers Layout recalculation</span>
+Box(
+    Modifier
+        .clip(RoundedCornerShape(12.dp))
+        .background(color)
+) { ... }
+
+<span class="comment">// ✅ Correct: graphicsLayer bypasses recomposition, handles rounded corners at the draw layer</span>
+Box(
+    Modifier.graphicsLayer {
+        shape = RoundedCornerShape(12.dp)
+        clip = <span class="kw">true</span>
+    }
+) { ... }</pre>
+
+      <div class="callout callout-blue">
+        <strong>How It Works</strong>
+        <p><code>graphicsLayer</code> modifications are applied on the RenderThread without triggering Compose's measure / layout / composition phases. Visual effects like rounded corners and shadows can completely bypass recomposition during scrolling.</p>
+      </div>
+    </div>
+
+    <!-- VERIFY -->
+    <div class="doc-section" id="verify">
+      <h2>How to Verify Recomposition Behavior</h2>
+      <p>Android Studio provides real-time tools to visually see which components are recomposing.</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <h4>Open Running Devices + Layout Inspector</h4>
+            <p>Android Studio → View → Tool Windows → Running Devices, connect a device and then open Layout Inspector.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <h4>Enable Recomposition Counts</h4>
+            <p>At the top of Layout Inspector → enable "Show Recomposition Counts". Components being recomposed will be highlighted and counts update in real time.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-body">
+            <h4>Observe During List Scrolling</h4>
+            <p>While scrolling, only newly visible items on screen should show recomposition counts. Off-screen items and items whose data has not changed should not increment their counts, confirming that skip optimization is working.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-orange">
+        <strong>This Is Not Theoretical</strong>
+        <p>You can open the tools and verify at any time. If a component shows an abnormally high recomposition count, it indicates a parameter stability issue -- check the @Stable annotations on its parameter types.</p>
+      </div>
+    </div>
+
+    <div class="doc-footer-nav">
+      <a href="../pages/ksp-codegen.html">← KSP Code Generation</a>
+      <a href="../pages/cross-platform.html" class="next"><span class="label">Next</span>Cross-Platform Comparison →</a>
+    </div>
+  </main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('.doc-section');
+const links = document.querySelectorAll('.sidebar-links a:not(.other)');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.sidebar-links a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testing System — ArchShowcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<style>:root { --accent: var(--green); --accent-dim: var(--green-dim); }</style>
+</head>
+<body>
+
+<nav class="doc-nav">
+  <a href="../../index_en.html" class="doc-nav-back">← ArchShowcase</a>
+  <span class="doc-nav-sep">/</span>
+  <span class="doc-nav-title">Testing System</span>
+  <span class="doc-nav-badge">TESTING.md</span>
+</nav>
+
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <div class="sidebar-label">On This Page</div>
+    <div class="sidebar-links">
+      <a href="#tiers" class="active">Five-Layer Defense</a>
+      <a href="#unit">Unit Tests</a>
+      <a href="#coverage">Coverage</a>
+      <a href="#screenshot">Screenshot Comparison</a>
+      <a href="#vf">VF Validation</a>
+      <a href="#e2e">E2E Tests</a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">Other Docs</div>
+    <div class="sidebar-links">
+      <a href="../pages/state-restore.html" class="other">State Restore</a>
+      <a href="../pages/obo-dispatcher.html" class="other">OBO Dispatcher</a>
+      <a href="../pages/perf-monitor.html" class="other">Perf Monitor</a>
+      <a href="../pages/auto-tracking.html" class="other">Auto Tracking</a>
+      <a href="../pages/vf-validation.html" class="other">VF Auto Validation</a>
+      <a href="../pages/ai-spec.html" class="other">AI Spec System</a>
+    </div>
+  </aside>
+
+  <main class="doc-content">
+    <div class="doc-hero">
+      <div class="doc-eyebrow">Multi-Layer Testing System</div>
+      <h1>Five-Layer Defense<br><span>Fully Automated</span></h1>
+      <p>Five layers of defense from fast to slow, from fine-grained to coarse. Unit tests ensure function correctness, coverage ensures no blind spots, Preview screenshots ensure component visuals, VF ensures complete user paths, E2E ensures real devices in real environments — no manual regression needed.</p>
+      <div class="badge-row">
+        <span class="badge badge-green">Coverage ≥80%</span>
+        <span class="badge badge-blue">Roborazzi</span>
+        <span class="badge badge-purple">VF Fully Auto</span>
+        <span class="badge badge-orange">Maestro E2E</span>
+      </div>
+    </div>
+
+    <!-- TIERS -->
+    <div class="doc-section" id="tiers">
+      <h2>Five-Layer Defense Overview</h2>
+      <div style="display:flex;flex-direction:column;gap:0;background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+        <div style="display:grid;grid-template-columns:200px 1fr 90px;align-items:center;padding:18px 24px;border-bottom:1px solid var(--border);gap:16px;">
+          <div><div style="font-weight:600;font-size:14px;">Unit Tests</div><div style="font-size:11px;color:var(--text3);font-family:JetBrains Mono,monospace;">01 / 05</div></div>
+          <div style="font-size:13px;color:var(--text2);">All three modules (core / platform / shared) have independent tests, run on Desktop without a device</div>
+          <div style="font-family:JetBrains Mono,monospace;font-size:11px;padding:4px 10px;border-radius:20px;text-align:center;background:var(--green-dim);color:var(--green);justify-self:end;">Seconds</div>
+        </div>
+        <div style="display:grid;grid-template-columns:200px 1fr 90px;align-items:center;padding:18px 24px;border-bottom:1px solid var(--border);gap:16px;">
+          <div><div style="font-weight:600;font-size:14px;">Coverage Gate</div><div style="font-size:11px;color:var(--text3);font-family:JetBrains Mono,monospace;">02 / 05</div></div>
+          <div style="font-size:13px;color:var(--text2);">Kover aggregated coverage ≥80% is a hard requirement; build fails below the threshold — no shipping without tests</div>
+          <div style="font-family:JetBrains Mono,monospace;font-size:11px;padding:4px 10px;border-radius:20px;text-align:center;background:var(--green-dim);color:var(--green);justify-self:end;">Seconds</div>
+        </div>
+        <div style="display:grid;grid-template-columns:200px 1fr 90px;align-items:center;padding:18px 24px;border-bottom:1px solid var(--border);gap:16px;">
+          <div><div style="font-weight:600;font-size:14px;">Preview Screenshot Comparison</div><div style="font-size:11px;color:var(--text3);font-family:JetBrains Mono,monospace;">03 / 05</div></div>
+          <div style="font-size:13px;color:var(--text2);">Roborazzi auto-scans all @Preview functions with full Koin DI environment, close to real runtime state</div>
+          <div style="font-family:JetBrains Mono,monospace;font-size:11px;padding:4px 10px;border-radius:20px;text-align:center;background:var(--blue-dim);color:var(--blue);justify-self:end;">~10s</div>
+        </div>
+        <div style="display:grid;grid-template-columns:200px 1fr 90px;align-items:center;padding:18px 24px;border-bottom:1px solid var(--border);gap:16px;">
+          <div><div style="font-weight:600;font-size:14px;">VF Auto Validation</div><div style="font-size:11px;color:var(--text3);font-family:JetBrains Mono,monospace;">04 / 05</div></div>
+          <div style="font-size:13px;color:var(--text2);">User-path-level regression covering logic + UI, server data frozen, zero handwritten assertions</div>
+          <div style="font-family:JetBrains Mono,monospace;font-size:11px;padding:4px 10px;border-radius:20px;text-align:center;background:var(--orange-dim);color:var(--orange);justify-self:end;">Minutes</div>
+        </div>
+        <div style="display:grid;grid-template-columns:200px 1fr 90px;align-items:center;padding:18px 24px;gap:16px;">
+          <div><div style="font-weight:600;font-size:14px;">E2E End-to-End</div><div style="font-size:11px;color:var(--text3);font-family:JetBrains Mono,monospace;">05 / 05</div></div>
+          <div style="font-size:13px;color:var(--text2);">Maestro supports full-flow testing on Android + iOS real devices</div>
+          <div style="font-family:JetBrains Mono,monospace;font-size:11px;padding:4px 10px;border-radius:20px;text-align:center;background:var(--orange-dim);color:var(--orange);justify-self:end;">Minutes</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- UNIT -->
+    <div class="doc-section" id="unit">
+      <h2>Unit Tests</h2>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Command</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>./gradlew :a-core:allTests</code></td><td class="desc">Core module tests</td></tr>
+            <tr><td><code>./gradlew :a-platform:allTests</code></td><td class="desc">Platform module tests</td></tr>
+            <tr><td><code>./gradlew :a-shared:allTests</code></td><td class="desc">Shared module tests</td></tr>
+            <tr><td><code>./gradlew :a-shared:desktopTest</code></td><td class="desc">Shared Desktop tests (fastest, no device needed)</td></tr>
+            <tr><td><code>./gradlew :a-shared:desktopTest --tests "*.ChatDaoStressTest"</code></td><td class="desc">Chat stress test</td></tr>
+            <tr><td><code>./gradlew :a-shared:desktopTest --tests "*.ChatDaoWindowTest"</code></td><td class="desc">Chat window query test</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- COVERAGE -->
+    <div class="doc-section" id="coverage">
+      <h2>Coverage Gate</h2>
+      <div class="callout callout-green">
+        <strong>Hard requirement: ≥80% (LINE, JaCoCo engine)</strong>
+        <p>Build fails below the threshold — no shipping without tests. Coverage credibility is ensured by the full Koin DI environment.</p>
+      </div>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Command</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>./gradlew koverHtmlReport</code></td><td class="desc">Aggregated coverage report for all modules (HTML)</td></tr>
+            <tr><td><code>./gradlew koverLog</code></td><td class="desc">Coverage summary for all modules (console)</td></tr>
+            <tr><td><code>./gradlew koverVerify</code></td><td class="desc">Coverage verification for all modules (≥80%, use when build fails)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SCREENSHOT -->
+    <div class="doc-section" id="screenshot">
+      <h2>Preview Screenshot Comparison</h2>
+      <p>Uses <code>generateComposePreviewRobolectricTests</code> to auto-scan all <code>@Preview</code> functions and generate screenshot tests — no handwritten test classes needed. New Previews are automatically included in coverage; <code>private</code> Previews are excluded.</p>
+
+      <div class="callout callout-blue">
+        <strong>Key Advantage</strong>
+        <p>Previews boot the full Koin dependency injection environment (DI + navigation + i18n + theming) — not static previews with fake data, but component rendering close to real runtime state, making screenshot comparison far more reliable than ordinary Previews.</p>
+      </div>
+
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Command</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>./gradlew :androidApp:recordRoborazziDebug</code></td><td class="desc">Record baseline screenshots (run on first use or after changes)</td></tr>
+            <tr><td><code>./gradlew :androidApp:verifyRoborazziDebug</code></td><td class="desc">Verify screenshot differences (run on CI)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- VF -->
+    <div class="doc-section" id="vf">
+      <h2>VF Screenshot Regression</h2>
+      <p>Record → ADB replay → SSIM screenshot comparison. See <a href="../pages/vf-validation.html" style="color:var(--accent);">VF Auto Validation docs</a> for details.</p>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Command</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>./gradlew verifyVf</code></td><td class="desc">Full VF validation</td></tr>
+            <tr><td><code>./gradlew verifyVf -Pvf.dir=&lt;path&gt;</code></td><td class="desc">Validate a specific directory</td></tr>
+            <tr><td><code>./gradlew cleanVerification</code></td><td class="desc">Clean verification artifacts</td></tr>
+            <tr><td><code>/update-vf</code></td><td class="desc">AI-controlled phone + TimeTravel overlay recording</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Recording Methods</h3>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-title">Manual Recording</div>
+          <div class="card-desc">In-app TT overlay → "Start Recording" → interact → "Stop Recording" → save zip</div>
+        </div>
+        <div class="card">
+          <div class="card-title">AI Auto Recording</div>
+          <div class="card-desc"><code>/update-vf</code> uses adb-mcp to control the phone and simulate human interaction — one command does it all</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- E2E -->
+    <div class="doc-section" id="e2e">
+      <h2>E2E Tests (Maestro)</h2>
+      <p>Supports full-flow testing on Android + iOS real devices, verifying complete user paths on actual hardware.</p>
+      <pre><span class="comment"># iOS</span>
+maestro test .maestro/flows/ -e APP_ID=com.example.archshowcase.ArchShowcase
+
+<span class="comment"># Android</span>
+maestro test .maestro/flows/ -e APP_ID=com.example.archshowcase
+
+<span class="comment"># Specify udid when multiple devices are connected</span>
+maestro test .maestro/flows/ --udid &lt;device-udid&gt;</pre>
+
+      <h3>Performance Benchmarks</h3>
+      <pre><span class="comment"># Generate Baseline Profile (requires connected device API 28+)</span>
+./gradlew :androidApp:generateBaselineProfile
+
+<span class="comment"># Startup benchmark test</span>
+./gradlew :macrobenchmark:connectedBenchmarkAndroidTest</pre>
+    </div>
+
+    <div class="doc-footer-nav">
+      <a href="../pages/ai-spec.html">← AI Spec System</a>
+      <a href="../../index_en.html" class="next"><span class="label">Back to</span>Home →</a>
+    </div>
+  </main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('.doc-section');
+const links = document.querySelectorAll('.sidebar-links a:not(.other)');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.sidebar-links a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fully Automatic Event Tracking — ArchShowcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<style>:root { --accent: var(--green); --accent-dim: var(--green-dim); }</style>
+</head>
+<body>
+
+<nav class="doc-nav">
+  <a href="../../index_en.html" class="doc-nav-back">← ArchShowcase</a>
+  <span class="doc-nav-sep">/</span>
+  <span class="doc-nav-title">Fully Automatic Event Tracking</span>
+  <span class="doc-nav-badge">docs/AUTO_TRACKING.md</span>
+</nav>
+
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <div class="sidebar-label">On This Page</div>
+    <div class="sidebar-links">
+      <a href="#arch" class="active">Architecture</a>
+      <a href="#intent">Intent Collection</a>
+      <a href="#exposure">Exposure Collection</a>
+      <a href="#ksp">KSP Auto-Generation</a>
+      <a href="#sanitize">Sanitization Rules</a>
+      <a href="#debug">Debug Verification</a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">Other Docs</div>
+    <div class="sidebar-links">
+      <a href="../pages/state-restore.html" class="other">Interaction Replay</a>
+      <a href="../pages/obo-dispatcher.html" class="other">OBO Dispatcher</a>
+      <a href="../pages/perf-monitor.html" class="other">Performance Monitor</a>
+      <a href="../pages/vf-validation.html" class="other">VF Automated Validation</a>
+      <a href="../pages/ai-spec.html" class="other">AI Spec System</a>
+      <a href="../pages/testing.html" class="other">Testing System</a>
+    </div>
+  </aside>
+
+  <main class="doc-content">
+    <div class="doc-hero">
+      <div class="doc-eyebrow">Fully Automatic Event Tracking</div>
+      <h1>Zero Handwritten Code<br><span>Full Collection of Four Event Types</span></h1>
+      <p>Fully automatic collection of four event types: Page, Interaction, Exposure, and Foreground/Background. Adding a tracked list page = <code>ExposureLazyColumn</code> + <code>appClickable</code> — no tracking code needed. Event names, business parameters, and sanitization are all handled automatically.</p>
+      <div class="badge-row">
+        <span class="badge badge-green">KSP Auto-Mapping</span>
+        <span class="badge badge-blue">Three-Layer Sanitization</span>
+        <span class="badge badge-purple">Exposure Tracking</span>
+        <span class="badge badge-orange">Zero Configuration</span>
+      </div>
+    </div>
+
+    <!-- ARCH -->
+    <div class="doc-section" id="arch">
+      <h2>Architecture</h2>
+      <div class="flow">User Action → InteractionContext Tagging → Store.accept(Intent)
+                                       ↓
+                                 TrackingExecutor Intercept
+                                       ↓
+                            KSP EventMapper (Type Matching)
+                                       ↓
+                            RuntimeSanitizer Sanitization
+                                       ↓
+                            AnalyticsCollector Reporting</div>
+      <p>Four event types fully automated: <strong>Page</strong> (routing), <strong>Intent</strong> (interaction), <strong>Exposure</strong> (impression), and <strong>Foreground/Background</strong>.</p>
+    </div>
+
+    <!-- INTENT -->
+    <div class="doc-section" id="intent">
+      <h2>Intent Collection Rules</h2>
+      <div class="callout callout-orange">
+        <strong>Core Principle</strong>
+        <p>All user interaction entry points must go through the <code>appClickable</code> family. Direct use of Compose native interaction APIs is prohibited.</p>
+      </div>
+
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Scenario</th><th>Use</th><th>Replaces</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">Click</td><td><code>Modifier.appClickable(component, onClick)</code></td><td class="desc"><del>.clickable</del></td></tr>
+            <tr><td class="desc">Long press / Double tap</td><td><code>Modifier.appCombinedClickable(...)</code></td><td class="desc"><del>.combinedClickable</del></td></tr>
+            <tr><td class="desc">Keyboard IME</td><td><code>appKeyboardActions(component, onSend, ...)</code></td><td class="desc"><del>KeyboardActions</del></td></tr>
+            <tr><td class="desc">Switch</td><td><code>AppSwitch</code> (built-in tracking)</td><td class="desc">—</td></tr>
+            <tr><td class="desc">Filter chip</td><td><code>AppFilterChip</code> (built-in tracking)</td><td class="desc">—</td></tr>
+            <tr><td class="desc">Button</td><td><code>AppButton / AppTextButton / AppIconButton</code></td><td class="desc">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>appClickable Parameters</h3>
+      <pre>Modifier.appClickable(
+    component = <span class="str">"ChatInputBar"</span>,        <span class="comment">// Component identifier for logging</span>
+    gestureType = GestureType.TAP,     <span class="comment">// TAP / LONG_PRESS / SWITCH / CHIP / IME_ACTION</span>
+    enabled = <span class="kw">true</span>,
+    interactionSource = interactionSource, <span class="comment">// Optional, pass when press animation is needed</span>
+    role = Role.Switch,                <span class="comment">// Optional, semantic role</span>
+    onClick = { ... },
+)</pre>
+
+      <div class="callout callout-blue">
+        <strong>Interactions That Don't Need Tracking</strong>
+        <p>Pure UI effects (scrolling, dragging, animation triggers) do not fire Store Intents, do not need <code>appClickable</code>, and can continue using native <code>.clickable</code>.</p>
+      </div>
+    </div>
+
+    <!-- EXPOSURE -->
+    <div class="doc-section" id="exposure">
+      <h2>Exposure Impression Collection</h2>
+      <p><code>ExposureLazyColumn</code> automatically tracks all items with <code>key</code> + <code>contentType</code>, including KSP auto-extracted business parameters, with zero manual code.</p>
+
+      <pre>ExposureLazyColumn(
+    listId = <span class="str">"image_list"</span>,
+    state = listState,
+) {
+    items(
+        items = images,
+        key = { it.id },               <span class="comment">// Used as exposureKey</span>
+        contentType = { <span class="str">"image_card"</span> }  <span class="comment">// Used as componentType</span>
+    ) { image ->
+        ImageCard(image)               <span class="comment">// No Modifier needed</span>
+    }
+}</pre>
+
+      <h3>Auto-Tracking Rules</h3>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Condition</th><th>Behavior</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">Has key + has contentType</td><td class="desc">Automatically injects trackExposure, exposureKey = <code>{contentType}_{key}</code>, params = KSP extracted</td></tr>
+            <tr><td class="desc">Missing key or contentType</td><td class="desc">Skipped, not tracked</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Exposure Trigger Conditions</h3>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-title">Visible Area >= 50%</div>
+          <div class="card-desc">Calculates visible ratio based on LazyList's visibleItems, accurately determining whether the item truly entered the viewport.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Dwell Time >= 500ms</div>
+          <div class="card-desc">Prevents false triggers during fast scrolling. Only counts as an exposure when the user actually stops to view.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Per-Page Deduplication</div>
+          <div class="card-desc">Within the same page lifecycle, each key is reported only once, preventing repeated triggers from scrolling.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Auto Business Parameter Extraction</div>
+          <div class="card-desc">KSP scans data classes and auto-generates <code>toExposureParams()</code>, automatically attaching business fields on exposure.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KSP -->
+    <div class="doc-section" id="ksp">
+      <h2>KSP Auto-Generation</h2>
+
+      <h3>EventMapper (Intent → TrackingEvent)</h3>
+      <ul style="color:var(--text2);line-height:2.2;padding-left:20px;font-size:14px;">
+        <li>Automatically scans all <code>sealed interface Intent</code> in <code>Store</code> interfaces</li>
+        <li>Generates <code>{StoreName}EventMapper.kt</code> + <code>EventMapperRegistry.kt</code></li>
+        <li>Registry matches by Intent type (<code>when (intent)</code>), no dependency on storeName strings</li>
+        <li>Naming: <code>CamelCase</code> → <code>snake_case</code> (e.g., <code>SendText</code> → <code>send_text</code>)</li>
+        <li>New Intents are reported with zero configuration</li>
+      </ul>
+
+      <h3>ExposureParamsProcessor</h3>
+      <p>Annotation-free full scan of all data classes under <code>com.example.archshowcase.*</code>, generating <code>toExposureParams()</code> extensions that reuse ParamsCodeGenerator sanitization rules.</p>
+    </div>
+
+    <!-- SANITIZE -->
+    <div class="doc-section" id="sanitize">
+      <h2>Sanitization Rules (Three Layers)</h2>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Layer</th><th>Mechanism</th><th>Example</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">KSP Compile-Time</td><td class="desc">Field name pattern matching</td><td><code>text</code> → <code>[len=N]</code>, <code>email</code> → first 8 chars of sha256</td></tr>
+            <tr><td class="desc">RuntimeSanitizer</td><td class="desc">Value regex detection</td><td><code>13812345678</code> → <code>138****5678</code>, <code>a@b.com</code> → <code>a***@b.com</code></td></tr>
+            <tr><td class="desc">Length Truncation</td><td class="desc">&gt;200 characters truncated</td><td><code>aaaa...</code> → <code>aaaa...[truncated]</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>KSP Sensitive Field Strategies</h3>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Strategy</th><th>Matched Field Names</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">EXCLUDE (excluded, not reported)</td><td class="desc">url, link, uri, token, password, secret, credential, apikey, auth, code, otp, pin, captcha...</td></tr>
+            <tr><td class="desc">LENGTH_ONLY (length only)</td><td class="desc">text, content, body, message</td></tr>
+            <tr><td class="desc">HASH (first 8 chars of SHA256)</td><td class="desc">email, mail, phone, mobile, tel</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- DEBUG -->
+    <div class="doc-section" id="debug">
+      <h2>Debug Verification</h2>
+      <pre><span class="comment"># logcat filter</span>
+adb logcat -s Analytics:D
+
+<span class="comment"># Output format</span>
+Intent   | {route} | {storeName}.{intent_name} | {gestureType} | {params}
+Page     | {route} | {action} | from={from} | nav={nav} | {duration}ms
+Exposure | {route} | {componentType}:{exposureKey} | list={listId} | {dwell}ms | {params}</pre>
+      <div class="callout callout-green">
+        <strong>Real-Time Debug Output</strong>
+        <p>In debug builds, <code>batchSize=1</code> — events bypass batch aggregation and are output to logcat in real time, making it easy to verify every operation.</p>
+      </div>
+    </div>
+
+    <div class="doc-footer-nav">
+      <a href="../pages/perf-monitor.html">← Performance Monitor</a>
+      <a href="../pages/vf-validation.html" class="next"><span class="label">Next</span>VF Automated Validation →</a>
+    </div>
+  </main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('.doc-section');
+const links = document.querySelectorAll('.sidebar-links a:not(.other)');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.sidebar-links a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

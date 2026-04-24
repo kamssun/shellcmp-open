@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OBO Dispatcher — ArchShowcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<style>:root { --accent: var(--orange); --accent-dim: var(--orange-dim); }</style>
+</head>
+<body>
+
+<nav class="doc-nav">
+  <a href="../../index_en.html" class="doc-nav-back">← ArchShowcase</a>
+  <span class="doc-nav-sep">/</span>
+  <span class="doc-nav-title">OBO Dispatcher</span>
+  <span class="doc-nav-badge">docs/OBO_HANDLER_INTERCEPT.md</span>
+</nav>
+
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <div class="sidebar-label">On This Page</div>
+    <div class="sidebar-links">
+      <a href="#problem" class="active">Problem Background</a>
+      <a href="#solution">Solution</a>
+      <a href="#intercept">Handler Interception</a>
+      <a href="#blacklist">Blacklist</a>
+      <a href="#diagnostics">Runtime Diagnostics</a>
+      <a href="#switches">Global Switches</a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">Other Docs</div>
+    <div class="sidebar-links">
+      <a href="../pages/state-restore.html" class="other">State Restore</a>
+      <a href="../pages/perf-monitor.html" class="other">Performance Monitor</a>
+      <a href="../pages/auto-tracking.html" class="other">Auto Tracking</a>
+      <a href="../pages/vf-validation.html" class="other">VF Auto Validation</a>
+      <a href="../pages/ai-spec.html" class="other">AI Spec System</a>
+      <a href="../pages/testing.html" class="other">Testing System</a>
+    </div>
+  </aside>
+
+  <main class="doc-content">
+    <div class="doc-hero">
+      <div class="doc-eyebrow">OBO Dispatcher</div>
+      <h1>The Queue Never Has More Than<br><span>One Task</span></h1>
+      <p>Eliminates jank caused by message queue congestion while making each task an independent message, enabling performance monitoring to pinpoint "this SDK took 51ms."</p>
+      <div class="badge-row">
+        <span class="badge badge-orange">Message Congestion Elimination</span>
+        <span class="badge badge-green">Third-Party SDK Interception</span>
+        <span class="badge badge-blue">Source-Level Diagnostics</span>
+        <span class="badge badge-purple">ASM Bytecode Rewriting</span>
+      </div>
+    </div>
+
+    <!-- PROBLEM -->
+    <div class="doc-section" id="problem">
+      <h2>Problem Background</h2>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-title">Problem 1: Message Congestion → Jank</div>
+          <div class="card-desc">A large number of async tasks are submitted to the main thread queue simultaneously, flooding it instantly. Android sync barriers cannot interrupt already-queued tasks, rendering frames get blocked behind the queue, and frame drops become inevitable.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Problem 2: Jank Without Knowing the Cause</div>
+          <div class="card-desc">With dozens of tasks executing together, performance monitoring can only see "this batch took 200ms total" and cannot identify which specific task or SDK caused the slowdown.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SOLUTION -->
+    <div class="doc-section" id="solution">
+      <h2>Solution</h2>
+      <p>The core principle of OBO (One By One): <strong>there is never more than one task in the queue</strong>. The next task is only submitted after the current one finishes.</p>
+
+      <div class="callout callout-green">
+        <strong>Result</strong>
+        <p>When VSYNC arrives, the queue is nearly empty, sync barriers work as intended, and rendering frames execute smoothly. With the same workload (30 list items x 10 tasks x 3ms), native concurrent dispatch causes severe jank, while OBO sequential execution maintains silky-smooth scrolling.</p>
+      </div>
+
+      <div class="callout callout-orange">
+        <strong>Trade-off</strong>
+        <p>OBO increases the total completion time for a batch of tasks, but users won't notice background tasks finishing in "2 seconds vs 1 second" -- they will definitely notice "scrolling froze for 1 second." Smoothness over speed is the right trade-off.</p>
+      </div>
+
+      <h3>Built-in Comparison UI</h3>
+      <p>The stress test page includes a real-time frame rate indicator with adjustable parameters. Toggle between OBO and native mode with one tap -- the difference is immediately visible.</p>
+    </div>
+
+    <!-- INTERCEPT -->
+    <div class="doc-section" id="intercept">
+      <h2>Handler Interception</h2>
+      <p>OBO can only govern the project's own code. Third-party SDKs (IM / Payment / Attribution, etc.) call <code>Handler.post/send</code> directly to post messages to the main thread, bypassing OBO and still causing congestion.</p>
+      <p>Solution: <strong>compile-time ASM bytecode rewriting</strong> automatically redirects third-party SDK Handler calls through OBO, with no SDK cooperation required.</p>
+
+      <div class="flow"><span class="comment">Compile time:</span>
+  INVOKEVIRTUAL Handler.post(Runnable)
+  → LDC "com.thirdparty.SomeClass"     <span class="comment">← caller class name injected at compile time</span>
+  → INVOKESTATIC OBOCompat.post(Handler, Runnable, String)
+
+<span class="comment">Runtime:</span>
+  Immediate → OBOScheduler.post(tag) { r.run() }
+  Delayed   → handler.postDelayed({ OBOScheduler.post(tag) { r.run() } }, delay)
+  Timed     → handler.postAtTime({ OBOScheduler.post(tag) { r.run() } }, time)
+  Front     → OBOScheduler.postFirst(tag) { r.run() }</div>
+
+      <p>Core principle: <strong>timing is handled by the system MessageQueue; execution is handled by OBO.</strong></p>
+
+      <h3>13 Intercepted Handler Methods</h3>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Category</th><th>Methods</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">Immediate</td><td><code>post</code>, <code>sendMessage</code>, <code>sendEmptyMessage</code></td></tr>
+            <tr><td class="desc">Delayed</td><td><code>postDelayed</code>(x2), <code>sendMessageDelayed</code>, <code>sendEmptyMessageDelayed</code></td></tr>
+            <tr><td class="desc">Timed</td><td><code>postAtTime</code>(x2), <code>sendMessageAtTime</code>, <code>sendEmptyMessageAtTime</code></td></tr>
+            <tr><td class="desc">Front</td><td><code>postAtFrontOfQueue</code>, <code>sendMessageAtFrontOfQueue</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Interception Report</h3>
+      <p>A standalone Gradle task that performs a read-only scan of runtime classpath JARs with incremental caching support. Report path:</p>
+      <pre>androidApp/build/reports/obo-handler/{variant}-intercept.txt
+<span class="comment">Format: ClassName | method() → Handler.xxx xCount</span></pre>
+    </div>
+
+    <!-- BLACKLIST -->
+    <div class="doc-section" id="blacklist">
+      <h2>Blacklist (Not Intercepted)</h2>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Prefix</th><th>Reason</th></tr></thead>
+          <tbody>
+            <tr><td><code>com.example.archshowcase.</code></td><td class="desc">Project's own code; Handler usage has specific reasons</td></tr>
+            <tr><td><code>androidx.</code></td><td class="desc">Framework infrastructure (Compose rendering pipeline, lifecycle, animation)</td></tr>
+            <tr><td><code>android.</code></td><td class="desc">System framework</td></tr>
+            <tr><td><code>kotlinx.coroutines.</code></td><td class="desc">Coroutine dispatcher (Dispatchers.Main); intercepting would cause double OBO</td></tr>
+            <tr><td><code>com.arkivanov.</code></td><td class="desc">Decompose / MVIKotlin architecture components</td></tr>
+            <tr><td><code>leakcanary.</code> / <code>curtains.</code></td><td class="desc">Debug tools</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout callout-blue">
+        <strong>Adding New Third-Party SDKs</strong>
+        <p>They are intercepted by default. To exclude one, simply add its package prefix to <code>OBOHandlerConstants.SKIP_PREFIXES</code>.</p>
+      </div>
+    </div>
+
+    <!-- DIAGNOSTICS -->
+    <div class="doc-section" id="diagnostics">
+      <h2>Runtime Diagnostics</h2>
+      <p>When <code>AppConfig.enableOBODiagnostics = true</code> is enabled, it tracks execution time and source for every task.</p>
+
+      <h3>[OBO:SLOW] Slow Tasks</h3>
+      <p>A single task exceeds half a frame (threshold is tied to the device refresh rate):</p>
+      <div class="log-block">
+        <span class="log-tag">[OBO:SLOW]</span> <span class="log-green">com.thirdparty.im.sdk.IMClient</span> <span class="log-blue">12.3ms</span> <span class="log-dim">(threshold=8.3ms)</span>
+      </div>
+
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Refresh Rate</th><th>Threshold</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">60Hz</td><td><code>8.3ms</code></td></tr>
+            <tr><td class="desc">90Hz</td><td><code>5.6ms</code></td></tr>
+            <tr><td class="desc">120Hz</td><td><code>4.2ms</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>[OBO:FLOOD] High-Frequency Flooding</h3>
+      <p>A single source accumulates over 100ms of execution within a 1s window (10% of frame budget), with a 5s cooldown:</p>
+      <div class="log-block">
+        <span class="log-tag">[OBO:FLOOD]</span> <span class="log-green">com.thirdparty.im.push.f</span> <span class="log-blue">185.0ms/1000ms</span> <span class="log-dim">(threshold=100.0ms, count=92, cooldown=5s)</span>
+      </div>
+
+      <h3>OBO Source in JANK Logs</h3>
+      <p>Each slow message is listed individually (OBO tasks &gt;3ms get their own line):</p>
+      <div class="log-block">
+        <span class="log-tag">[PERF:JANK]</span> SEVERE 108ms (11 dropped) route=ImageDemo #912 (+19)<br>
+        &nbsp;&nbsp;├─ Choreographer.doFrame 107ms<br>
+        &nbsp;&nbsp;├─ <span class="log-green">OBOScheduler LoginStore 3ms</span><br>
+        &nbsp;&nbsp;├─ <span class="log-green">OBOScheduler com.thirdparty.push.f 3ms</span><br>
+        &nbsp;&nbsp;├─ <span class="log-green">OBOScheduler com.thirdparty.im.sdk.IMClient 51ms</span><br>
+        &nbsp;&nbsp;└─ cpu: 100ms/108ms (92%)
+      </div>
+
+      <h3>Source Tag Injection Methods</h3>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Source</th><th>Tag Value</th><th>Injection Method</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">ASM-intercepted third-party SDK</td><td><code>com.thirdparty.im.sdk.IMClient</code></td><td class="desc">Compile-time LDC constant</td></tr>
+            <tr><td class="desc">oboLaunch coroutine</td><td><code>"LoginStore"</code></td><td class="desc">CoroutineName</td></tr>
+            <tr><td class="desc">OBOLaunchedEffect</td><td><code>debugTag or "effect"</code></td><td class="desc">CoroutineName</td></tr>
+            <tr><td class="desc">Direct OBOScheduler.post</td><td><code>"Application"</code></td><td class="desc">Direct parameter</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SWITCHES -->
+    <div class="doc-section" id="switches">
+      <h2>Global Switches</h2>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Switch</th><th>Effect</th></tr></thead>
+          <tbody>
+            <tr><td><code>AppConfig.useOBOScheduler = false</code></td><td class="desc">Disable OBO dispatch; OBOCompat passes through to the original Handler calls</td></tr>
+            <tr><td><code>AppConfig.enableOBODiagnostics = true</code></td><td class="desc">Enable source-level diagnostic logs (overhead: 2x nanoTime + HashMap operation per task)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-green">
+        <strong>Safety Guarantees</strong>
+        <p>All classes in the <code>com.example.archshowcase.core.scheduler.*</code> package (including OBOCompat) are excluded from rewriting to prevent recursion. Non-main-thread Handler calls are passed through directly, and the timing semantics of delayed/timed messages are fully preserved.</p>
+      </div>
+    </div>
+
+    <div class="doc-footer-nav">
+      <a href="../pages/state-restore.html">&larr; State Restore</a>
+      <a href="../pages/perf-monitor.html" class="next"><span class="label">Next</span>Performance Monitor &rarr;</a>
+    </div>
+  </main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('.doc-section');
+const links = document.querySelectorAll('.sidebar-links a:not(.other)');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.sidebar-links a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

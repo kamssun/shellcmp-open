@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KSP Code Generation — ArchShowcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<style>:root { --accent: var(--blue); --accent-dim: var(--blue-dim); }</style>
+</head>
+<body>
+
+<nav class="doc-nav">
+  <a href="../../index_en.html" class="doc-nav-back">← ArchShowcase</a>
+  <span class="doc-nav-sep">/</span>
+  <span class="doc-nav-title">KSP Code Generation</span>
+  <span class="doc-nav-badge">ksp-annotations / ksp-processor</span>
+</nav>
+
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <div class="sidebar-label">On This Page</div>
+    <div class="sidebar-links">
+      <a href="#overview" class="active">Overview</a>
+      <a href="#annotations">Four Annotations</a>
+      <a href="#replayable">@Replayable</a>
+      <a href="#route">@RouteRegistry</a>
+      <a href="#vf">@VfResolvable</a>
+      <a href="#custom">@CustomState</a>
+      <a href="#generated">Generated Output</a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">Other Docs</div>
+    <div class="sidebar-links">
+      <a href="../pages/state-restore.html" class="other">State Replay</a>
+      <a href="../pages/obo-dispatcher.html" class="other">OBO Dispatcher</a>
+      <a href="../pages/perf-monitor.html" class="other">Performance Monitor</a>
+      <a href="../pages/auto-tracking.html" class="other">Auto Tracking</a>
+      <a href="../pages/vf-validation.html" class="other">VF Auto Validation</a>
+      <a href="../pages/ai-spec.html" class="other">AI Spec System</a>
+      <a href="../pages/testing.html" class="other">Testing System</a>
+    </div>
+  </aside>
+
+  <main class="doc-content">
+    <div class="doc-hero">
+      <div class="doc-eyebrow">KSP Code Generation</div>
+      <h1>Add Two Annotations<br><span>Everything Else Is Automated</span></h1>
+      <p>Four annotations eliminate massive boilerplate. Adding a new page with state replay + fully automated validation = write business code + add two annotations — glue code, route registration, and validation wiring are all auto-generated. New developers can see at a glance what capabilities a module has just by looking at its annotations.</p>
+      <div class="badge-row">
+        <span class="badge badge-blue">@Replayable</span>
+        <span class="badge badge-green">@RouteRegistry</span>
+        <span class="badge badge-purple">@VfResolvable</span>
+        <span class="badge badge-orange">@CustomState</span>
+      </div>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div class="doc-section" id="overview">
+      <h2>Overview</h2>
+      <div class="callout callout-blue">
+        <strong>Developer Experience</strong>
+        <p>When building new pages, you never need to worry about infrastructure concerns like "how to wire up state replay", "how to register VF", or "how to serialize routes" — just add the annotations and it works, with minimal cognitive overhead.</p>
+      </div>
+
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Annotation</th><th>Purpose</th><th>Generated Output</th></tr></thead>
+          <tbody>
+            <tr><td><code>@Replayable</code></td><td class="desc">Integrate with state replay system</td><td class="desc">ExportStrategy + FactoryHelpers</td></tr>
+            <tr><td><code>@RouteRegistry</code></td><td class="desc">Route registration</td><td class="desc">Route serialization + registration code</td></tr>
+            <tr><td><code>@VfResolvable</code></td><td class="desc">Integrate with VF validation system</td><td class="desc">VF resolver + registration entry</td></tr>
+            <tr><td><code>@CustomState</code></td><td class="desc">Field subscription + memory snapshot</td><td class="desc">SelectableState + MemoryTrackable</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ANNOTATIONS -->
+    <div class="doc-section" id="annotations">
+      <h2>Four Annotations at a Glance</h2>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-title">Integration Cost</div>
+          <div class="card-desc">Adding a new page with state replay + fully automated validation = write business code + add <strong>2 annotations</strong> (@Replayable + @VfResolvable) — everything else is auto-generated.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Readability</div>
+          <div class="card-desc">Annotations are documentation. See @Replayable and you know the module supports time-travel debugging; see @VfResolvable and you know it has automated validation coverage — no need to dig through docs.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">@Repeatable Support</div>
+          <div class="card-desc">@Replayable supports @Repeatable — the same Record can carry multiple annotations, generating independent code for each Store.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Generated File Location</div>
+          <div class="card-desc"><code>a-shared/build/generated/ksp/metadata/commonMain/</code> — each annotation instance generates its own file with no cross-contamination.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPLAYABLE -->
+    <div class="doc-section" id="replayable">
+      <h2>@Replayable — Integrate with State Replay</h2>
+      <p>Annotate on HistoryRecord — KSP auto-generates ExportStrategy and registers it with StoreExportRegistry.</p>
+      <pre><span class="ann">@Replayable</span>  <span class="comment">// storeName inferred from parent class when empty</span>
+<span class="ann">@Serializable</span>
+<span class="kw">data class</span> MyHistoryRecord(
+    <span class="kw">val</span> type: MyHistoryType,
+    <span class="kw">val</span> timestamp: Long
+) : JvmSerializable {
+    <span class="kw">fun</span> applyToState(prevState: State): State = ...
+    <span class="kw">fun</span> toIntent(): Any = ...
+}</pre>
+
+      <p>Generated output:</p>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>File</th><th>Content</th></tr></thead>
+          <tbody>
+            <tr><td><code>{Store}ExportStrategy.kt</code></td><td class="desc">SimpleExportStrategy implementation with createInitialState and processRecord</td></tr>
+            <tr><td><code>GeneratedExportStrategies.kt</code></td><td class="desc">Unified registration entry — registerGeneratedExportStrategies() registers all strategies at once</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-blue">
+        <strong>@Repeatable Usage</strong>
+        <p>The same Record can carry multiple annotations, generating independent code for each Store:</p>
+      </div>
+      <pre><span class="ann">@Replayable</span>(stateClass = NavigationStore.State::<span class="kw">class</span>)
+<span class="ann">@Replayable</span>(stateClass = NavigationStore.State::<span class="kw">class</span>, storeName = <span class="str">"DemoNavigationStore"</span>)
+<span class="kw">data class</span> NavHistoryRecord(...)</pre>
+    </div>
+
+    <!-- ROUTE -->
+    <div class="doc-section" id="route">
+      <h2>@RouteRegistry — Route Registration</h2>
+      <p>Adding a new page requires only a single annotation — route registration and serialization code are fully auto-generated with no manual wiring.</p>
+      <pre><span class="ann">@RouteRegistry</span>
+<span class="ann">@Serializable</span>
+<span class="kw">data class</span> ImageDetailRoute(<span class="kw">val</span> imageId: String) : AppRoute
+
+<span class="comment">// KSP auto-generates:</span>
+<span class="comment">// - Route serialization adapter</span>
+<span class="comment">// - RouteRegistry registration code</span>
+<span class="comment">// - Decompose ChildFactory branch</span></pre>
+
+      <div class="callout callout-green">
+        <strong>Result</strong>
+        <p>Adding a new route = define a data class + add one @RouteRegistry annotation — no need to hand-write registration logic, serialization, or ChildFactory branches.</p>
+      </div>
+    </div>
+
+    <!-- VF -->
+    <div class="doc-section" id="vf">
+      <h2>@VfResolvable — Integrate with VF Validation</h2>
+      <p>Annotate on business modules — auto-generates VF resolvers and registers them with the validation system. New modules require no manual configuration.</p>
+      <pre><span class="ann">@VfResolvable</span>
+<span class="kw">class</span> ImageDemoComponent(...) : ImageDemoComponent {
+    <span class="comment">// Business logic...</span>
+}
+
+<span class="comment">// KSP auto-generates:</span>
+<span class="comment">// - VfResolver implementation</span>
+<span class="comment">// - GeneratedVfResolvers.kt unified registration entry</span></pre>
+
+      <div class="callout callout-purple">
+        <strong>Works with @Replayable</strong>
+        <p>@VfResolvable relies on the state replay capability provided by @Replayable. Combined, a new page gains both: time-travel debugging + fully automated VF regression validation.</p>
+      </div>
+    </div>
+
+    <!-- CUSTOM -->
+    <div class="doc-section" id="custom">
+      <h2>@CustomState — Field Subscription + Memory Snapshot</h2>
+      <p>A composite annotation equivalent to applying <code>@SelectableState</code> + <code>@MemoryTrackable</code> together — one annotation generates two sets of code.</p>
+
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-title">@SelectableState (Field Subscription)</div>
+          <div class="card-desc">Generates fine-grained field-level subscription extensions so the UI only subscribes to the fields it actually cares about, avoiding recomposition triggered by unrelated field changes.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">@MemoryTrackable (Memory Snapshot)</div>
+          <div class="card-desc">Generates <code>toMemorySnapshot()</code> which recursively counts Collection/Map .size values, used for Store collection size reporting in GC pressure detection.</div>
+        </div>
+      </div>
+
+      <pre><span class="ann">@CustomState</span>  <span class="comment">// = @SelectableState + @MemoryTrackable</span>
+<span class="kw">data class</span> ChatRoomState(
+    <span class="kw">val</span> messages: List&lt;Message&gt; = emptyList(),
+    <span class="kw">val</span> isLoading: Boolean = <span class="kw">false</span>,
+    <span class="kw">override val</span> history: AppendOnlyHistory&lt;ChatHistoryRecord&gt; = AppendOnlyHistory()
+) : ReplayableState&lt;ChatHistoryRecord&gt; { ... }
+
+<span class="comment">// Available after generation:</span>
+state.selectMessages()        <span class="comment">// Subscribe to messages field only</span>
+state.toMemorySnapshot()      <span class="comment">// Output to GC pressure report</span></pre>
+    </div>
+
+    <!-- GENERATED -->
+    <div class="doc-section" id="generated">
+      <h2>Generated Output Overview</h2>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Annotation</th><th>Generated File</th><th>Output Location</th></tr></thead>
+          <tbody>
+            <tr><td><code>@Replayable</code></td><td><code>{Store}ExportStrategy.kt</code><br><code>GeneratedExportStrategies.kt</code></td><td class="desc">a-shared/build/generated/ksp/metadata/commonMain/</td></tr>
+            <tr><td><code>@RouteRegistry</code></td><td><code>GeneratedRoutes.kt</code></td><td class="desc">a-shared/build/generated/ksp/metadata/commonMain/</td></tr>
+            <tr><td><code>@VfResolvable</code></td><td><code>{Component}VfResolver.kt</code><br><code>GeneratedVfResolvers.kt</code></td><td class="desc">a-shared/build/generated/ksp/metadata/commonMain/</td></tr>
+            <tr><td><code>@CustomState</code></td><td><code>{State}Extensions.kt</code></td><td class="desc">a-shared/build/generated/ksp/metadata/commonMain/</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Module Structure</h3>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Module</th><th>Responsibility</th></tr></thead>
+          <tbody>
+            <tr><td><code>ksp-annotations</code></td><td class="desc">Annotation definitions — all @Replayable / @RouteRegistry / @VfResolvable / @CustomState / @MemoryTrackable</td></tr>
+            <tr><td><code>ksp-processor</code></td><td class="desc">KSP processor — scans annotations and generates code; each annotation instance produces an independent file with incremental compilation support</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="doc-footer-nav">
+      <a href="../pages/auto-tracking.html">← Auto Tracking</a>
+      <a href="../pages/custom-ui.html" class="next"><span class="label">Next</span>Custom UI →</a>
+    </div>
+  </main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('.doc-section');
+const links = document.querySelectorAll('.sidebar-links a:not(.other)');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.sidebar-links a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

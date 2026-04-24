@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cross-Platform Comparison — ArchShowcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<style>:root { --accent: var(--green); --accent-dim: var(--green-dim); }</style>
+</head>
+<body>
+
+<nav class="doc-nav">
+  <a href="../../index_en.html" class="doc-nav-back">← ArchShowcase</a>
+  <span class="doc-nav-sep">/</span>
+  <span class="doc-nav-title">Cross-Platform Comparison</span>
+  <span class="doc-nav-badge">docs/CROSS_PLATFORM_ANALYSIS.md</span>
+</nav>
+
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <div class="sidebar-label">On This Page</div>
+    <div class="sidebar-links">
+      <a href="#conclusion" class="active">Key Takeaway</a>
+      <a href="#5dim">Five-Dimension Comparison</a>
+      <a href="#realdata">Real-World Data</a>
+      <a href="#ecosystem">Ecosystem Maturity</a>
+      <a href="#adoption">Industry Adoption</a>
+      <a href="#ai-clone">The Reality of AI Cloning</a>
+      <a href="#tradeoffs">Known KMP Pain Points</a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">Other Docs</div>
+    <div class="sidebar-links">
+      <a href="../pages/state-restore.html" class="other">State Restore</a>
+      <a href="../pages/obo-dispatcher.html" class="other">OBO Dispatcher</a>
+      <a href="../pages/perf-monitor.html" class="other">Perf Monitor</a>
+      <a href="../pages/ksp-codegen.html" class="other">KSP Code Gen</a>
+      <a href="../pages/custom-ui.html" class="other">Custom UI</a>
+      <a href="../pages/testing.html" class="other">Testing</a>
+    </div>
+  </aside>
+
+  <main class="doc-content">
+    <div class="doc-hero">
+      <div class="doc-eyebrow">Cross-Platform Comparison</div>
+      <h1>KMP+CMP<br><span>vs AI Cloning</span></h1>
+      <p>A comprehensive analysis based on the archshowcase project architecture and 2025-2026 industry data. KMP+CMP is the converging direction backed by Google, Apple, and JetBrains, with 7 years of production validation; "AI Cloning" currently has zero success cases.</p>
+      <div class="badge-row">
+        <span class="badge badge-green">7 Years in Production</span>
+        <span class="badge badge-blue">Three Vendors Converging</span>
+        <span class="badge badge-purple">Measured >90% Code Sharing</span>
+        <span class="badge badge-orange">2026 Industry Data</span>
+      </div>
+    </div>
+
+    <!-- CONCLUSION -->
+    <div class="doc-section" id="conclusion">
+      <h2>Key Takeaway</h2>
+      <div class="callout callout-green">
+        <strong>In One Sentence</strong>
+        <p>KMP+CMP replaces uncertain AI translation with deterministic compiler guarantees — one codebase delivers to three platforms, and a single bug fix takes effect everywhere. "AI Cloning" essentially bets core architectural decisions on a technology with zero success cases.</p>
+      </div>
+
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-title">KMP+CMP</div>
+          <div class="card-desc">Production-proven for 7+ years by Google Docs, Cash App, and others. The converging direction of Google / Apple / JetBrains. Compiler-guaranteed consistency.</div>
+          <span class="card-tag">Recommended</span>
+        </div>
+        <div class="card">
+          <div class="card-title">Single Platform + AI Cloning</div>
+          <div class="card-desc">Zero success cases as of 2026. Syntax translation is just the tip of the iceberg — platform API differences, UI paradigm differences, and lifecycle differences all require manual handling.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5DIM -->
+    <div class="doc-section" id="5dim">
+      <h2>Five-Dimension Comparison</h2>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Dimension</th><th>KMP+CMP</th><th>Single Platform + AI Cloning</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="desc">Dev Speed</td>
+              <td class="desc">Slower upfront (architecture setup) → Extremely fast later</td>
+              <td class="desc">Fast upfront (native development) → Slow later (repetitive work)</td>
+            </tr>
+            <tr>
+              <td class="desc">Stability</td>
+              <td class="desc"><strong>Very High</strong> (shared logic, no sync bugs)</td>
+              <td class="desc">Medium (AI translation may miss logic details)</td>
+            </tr>
+            <tr>
+              <td class="desc">Team Requirements</td>
+              <td class="desc">Proficient in Kotlin, basic iOS knowledge</td>
+              <td class="desc">Requires both Android + iOS developers</td>
+            </tr>
+            <tr>
+              <td class="desc">UX Quality</td>
+              <td class="desc">95% near-native (CMP for iOS is now Stable)</td>
+              <td class="desc">100% native experience</td>
+            </tr>
+            <tr>
+              <td class="desc">Best Fit</td>
+              <td class="desc">Complex business logic, long-term iteration — utilities / social apps</td>
+              <td class="desc">Highly custom interactions, heavy use of low-level system APIs, and ample staffing</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="doc-table-wrap" style="margin-top:24px;">
+        <table>
+          <thead><tr><th>Dimension</th><th>KMP+CMP</th><th>Single Platform + AI Cloning</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">Code Source</td><td class="desc">Single source (1 codebase → N platforms)</td><td class="desc">Dual source (2 independent codebases)</td></tr>
+            <tr><td class="desc">New Feature Cost</td><td class="desc">1x (write once)</td><td class="desc">1.3x~2x (write once + translate + review + test)</td></tr>
+            <tr><td class="desc">Bug Fix</td><td class="desc">Fix once, effective on all platforms</td><td class="desc">Fix twice, or AI-translate then verify</td></tr>
+            <tr><td class="desc">Consistency Guarantee</td><td class="desc"><strong>Compiler-guaranteed</strong></td><td class="desc">Manually guaranteed (or AI-guaranteed, uncertain)</td></tr>
+            <tr><td class="desc">Long-term Maintenance</td><td class="desc">Linear growth</td><td class="desc">Exponential divergence risk</td></tr>
+            <tr><td class="desc">Industry Validation</td><td class="desc">Google Docs, Cash App, etc. — 7+ years</td><td class="desc">Zero success cases</td></tr>
+            <tr><td class="desc">Tech Trend</td><td class="desc">Google / Apple / JetBrains converging</td><td class="desc">Against the trend</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- REAL DATA -->
+    <div class="doc-section" id="realdata">
+      <h2>archshowcase Real-World Data</h2>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Metric</th><th>Data</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">commonMain Sharing Rate</td><td><code>&gt;90%</code> — UI, navigation, state management, networking, DI all shared</td></tr>
+            <tr><td class="desc">Shared Lines of Code</td><td class="desc">~8,200 lines commonMain / ~13,400 lines total (61%)</td></tr>
+            <tr><td class="desc">a-shared Sharing Rate</td><td><code>99%</code> — only 40 out of 4,458 lines are iosMain</td></tr>
+            <tr><td class="desc">iOS Swift Code Volume</td><td class="desc">~1,004 lines (SDK bridging only), ContentView.swift is just 22 lines</td></tr>
+            <tr><td class="desc">expect/actual Count</td><td class="desc">8 services (Auth, Pay, IM, RTC and other SDK bridges)</td></tr>
+            <tr><td class="desc">New Page Cost</td><td class="desc">Only modify Kotlin — Android / iOS / Desktop all get it simultaneously</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-green">
+        <strong>Key Fact</strong>
+        <p>With the AI Cloning approach, you would need to rewrite 8,200+ lines of shared business logic into Swift from scratch, plus entirely different iOS SDK integration, navigation system, and state management. This is not translating syntax — it is rewriting the entire architecture.</p>
+      </div>
+    </div>
+
+    <!-- ECOSYSTEM -->
+    <div class="doc-section" id="ecosystem">
+      <h2>Ecosystem Maturity</h2>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-title">KMP 2023.11 Stable</div>
+          <div class="card-desc">Kotlin Multiplatform has reached Stable status — no longer experimental.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">CMP for iOS 2025.5 Stable</div>
+          <div class="card-desc">Compose Multiplatform for iOS is officially Stable and production-ready.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Full Google Jetpack Support</div>
+          <div class="card-desc">Core Jetpack libraries like Room / DataStore / ViewModel now support KMP — no need to maintain forked versions.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Apple Swift for Android</div>
+          <div class="card-desc">Announced at WWDC 2025, positioned identically to KMP — shared business logic + native UI. Platform vendors are converging on this direction.</div>
+        </div>
+      </div>
+
+      <h3>Market Share & Growth (2026)</h3>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Framework</th><th>Market Share</th><th>Growth</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">Flutter</td><td><code>~46%</code></td><td class="desc">Stable leader</td></tr>
+            <tr><td class="desc">React Native</td><td><code>~35-42%</code></td><td class="desc">Slightly declining</td></tr>
+            <tr><td class="desc"><strong>KMP</strong></td><td><code>~18-23%</code></td><td class="desc"><strong>From 7% to 23% in 18 months — fastest growing</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ADOPTION -->
+    <div class="doc-section" id="adoption">
+      <h2>Industry Adoption</h2>
+      <h3>International Companies</h3>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Company</th><th>Use Case</th><th>Details</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">Google Workspace</td><td class="desc">Google Docs iOS</td><td class="desc">A/B tested for a year — performance on par or better than Obj-C, no difference in crash rate</td></tr>
+            <tr><td class="desc">Cash App</td><td class="desc">Core financial features</td><td class="desc">Using KMP since 2018, the #1 finance app in the US, 7+ years of validation</td></tr>
+            <tr><td class="desc">McDonald's</td><td class="desc">Entire app</td><td class="desc">Processes 6.5 million transactions/month, over 100 million downloads</td></tr>
+            <tr><td class="desc">Netflix</td><td class="desc">Prodicle production management</td><td class="desc">First FAANG company to publicly adopt KMP</td></tr>
+            <tr><td class="desc">Duolingo</td><td class="desc">Gradually expanding to KMP-first</td><td class="desc">Confidence grows with each new module</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Chinese Companies</h3>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Company</th><th>Product</th><th>Usage</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">Baidu</td><td class="desc">Wonder App</td><td class="desc">Started with the data layer, gradually expanded to multiple core business modules</td></tr>
+            <tr><td class="desc">Bilibili</td><td class="desc">Bilibili (domestic version)</td><td class="desc">IM module uses KMP + CMP</td></tr>
+            <tr><td class="desc">Kuaishou</td><td class="desc">CapCut-rival App (Top 3 video editor)</td><td class="desc">2 years with KMP, sharing core business logic of the video editor</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- AI CLONE -->
+    <div class="doc-section" id="ai-clone">
+      <h2>The Reality of "AI Cloning"</h2>
+
+      <div class="callout callout-orange">
+        <strong>Zero Success Cases</strong>
+        <p>As of 2026, there is no public case demonstrating that AI can end-to-end automatically translate a complete Android app to iOS. All AI translation tools only work at the code snippet level.</p>
+      </div>
+
+      <h3>Language Translation ≠ App Translation</h3>
+      <p>Kotlin → Swift syntax conversion is just the tip of the iceberg. The real challenges lie in:</p>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-title">Platform API Differences</div>
+          <div class="card-desc">Android Context vs iOS AppDelegate — two entirely different system API paradigms.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">UI Paradigm Differences</div>
+          <div class="card-desc">Jetpack Compose vs SwiftUI — completely different state management patterns that syntax translation cannot resolve.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Lifecycle Differences</div>
+          <div class="card-desc">Activity/Fragment vs UIViewController — entirely different lifecycle hooks and back-stack logic.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Ongoing Cost</div>
+          <div class="card-desc">Every change on the original platform requires a corresponding change on the cloned platform. The two codebases gradually diverge, bug fixes fall out of sync, and user experience fractures.</div>
+        </div>
+      </div>
+
+      <div class="callout callout-blue">
+        <strong>The Most Ironic Fact</strong>
+        <p>The most successful use of AI for cross-platform development today is actually using Cursor + Claude to <strong>assist KMP development</strong>, not to replace KMP. AI and KMP are complementary, not competing.</p>
+      </div>
+    </div>
+
+    <!-- TRADEOFFS -->
+    <div class="doc-section" id="tradeoffs">
+      <h2>Known KMP Pain Points (Honest Assessment)</h2>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Pain Point</th><th>Current Status</th><th>Mitigation</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="desc">Slow iOS Builds</td>
+              <td class="desc">Can reach 20 minutes unoptimized</td>
+              <td class="desc">Static framework + build only needed architectures + cache — optimizable to &lt;2 minutes</td>
+            </tr>
+            <tr>
+              <td class="desc">iOS Debugging Experience</td>
+              <td class="desc">More complex than Android</td>
+              <td class="desc">JetBrains continuously improving; log tracing + simulator testing provides good coverage</td>
+            </tr>
+            <tr>
+              <td class="desc">Obj-C Bridging Type Loss</td>
+              <td class="desc">Flow → Any?, generics lost</td>
+              <td class="desc">Swift Export (experimental) will fully resolve this; SKIE tool provides a temporary workaround</td>
+            </tr>
+            <tr>
+              <td class="desc">Learning Curve</td>
+              <td class="desc">Requires familiarity with Gradle / KMP toolchain</td>
+              <td class="desc">AI tools significantly lower the barrier to entry (Cursor + Claude)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="doc-footer-nav">
+      <a href="../pages/custom-ui.html">← Custom UI</a>
+      <a href="../../index_en.html" class="next"><span class="label">Back to</span>Home →</a>
+    </div>
+  </main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('.doc-section');
+const links = document.querySelectorAll('.sidebar-links a:not(.other)');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.sidebar-links a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

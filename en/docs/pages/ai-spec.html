@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Specification System — ArchShowcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<style>:root { --accent: var(--purple); --accent-dim: var(--purple-dim); }</style>
+</head>
+<body>
+
+<nav class="doc-nav">
+  <a href="../../index_en.html" class="doc-nav-back">← ArchShowcase</a>
+  <span class="doc-nav-sep">/</span>
+  <span class="doc-nav-title">AI Specification System</span>
+  <span class="doc-nav-badge">AGENTS.md</span>
+</nav>
+
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <div class="sidebar-label">On This Page</div>
+    <div class="sidebar-links">
+      <a href="#mental" class="active">Architecture Mental Model</a>
+      <a href="#rules">Specification Layers</a>
+      <a href="#general">General Rules</a>
+      <a href="#domain">Domain Rules</a>
+      <a href="#openspec">OpenSpec Workflow</a>
+      <a href="#doc-principle">Documentation Principles</a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">Other Docs</div>
+    <div class="sidebar-links">
+      <a href="../pages/state-restore.html" class="other">State Restore</a>
+      <a href="../pages/obo-dispatcher.html" class="other">OBO Dispatcher</a>
+      <a href="../pages/perf-monitor.html" class="other">Performance Monitor</a>
+      <a href="../pages/auto-tracking.html" class="other">Auto Tracking</a>
+      <a href="../pages/vf-validation.html" class="other">VF Auto Validation</a>
+      <a href="../pages/testing.html" class="other">Testing</a>
+    </div>
+  </aside>
+
+  <main class="doc-content">
+    <div class="doc-hero">
+      <div class="doc-eyebrow">AI Specification System</div>
+      <h1>Even Newcomers Can't Write<br><span>Bad Code</span></h1>
+      <p>34 forbidden patterns + layered rule system, enforced by AI in real time during coding. Instead of reviewing after the fact, mistakes are prevented as code is written. Specifications are guaranteed by the system, not by human memory.</p>
+      <div class="badge-row">
+        <span class="badge badge-purple">34 Forbidden Patterns</span>
+        <span class="badge badge-blue">Progressive Loading</span>
+        <span class="badge badge-orange">OpenSpec</span>
+        <span class="badge badge-green">Pre-commit Auto Check</span>
+      </div>
+    </div>
+
+    <!-- MENTAL -->
+    <div class="doc-section" id="mental">
+      <h2>Architecture Mental Model</h2>
+
+      <!-- Platform row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;text-align:center;font-size:13px;font-weight:600;">androidApp</div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;text-align:center;font-size:13px;font-weight:600;">iosApp</div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;text-align:center;font-size:13px;font-weight:600;">desktopApp</div>
+      </div>
+      <div style="text-align:center;color:var(--text3);font-size:16px;line-height:1;margin:2px 0 6px;">↓</div>
+
+      <!-- a-shared -->
+      <div style="background:oklch(0.76 0.18 155 / 0.06);border:1px solid oklch(0.76 0.18 155 / 0.3);border-radius:10px;padding:14px 18px;margin-bottom:6px;">
+        <div style="color:var(--green);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;margin-bottom:8px;letter-spacing:0.06em;">a-shared · Shared UI + Business Logic (99% commonMain)</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <span style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:3px 10px;font-size:12px;color:var(--text2);">presentation/ · Component + Content + Store (MVI)</span>
+          <span style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:3px 10px;font-size:12px;color:var(--text2);">di/ · Koin Module Assembly</span>
+          <span style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:3px 10px;font-size:12px;color:var(--text2);">i18n/ · StringProvider + tr()</span>
+        </div>
+      </div>
+
+      <!-- a-platform -->
+      <div style="background:oklch(0.68 0.17 248 / 0.06);border:1px solid oklch(0.68 0.17 248 / 0.25);border-radius:10px;padding:14px 18px;margin-bottom:6px;">
+        <div style="color:var(--blue);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;margin-bottom:8px;letter-spacing:0.06em;">a-platform · SDK Bridging (expect / actual)</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <span style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:3px 10px;font-size:12px;color:var(--text2);">Auth · Pay · IM · RTC · Attribution · DeviceToken</span>
+          <span style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:3px 10px;font-size:12px;color:var(--text2);">network/ · Api / Repository / DTO / NetworkRecorder</span>
+        </div>
+      </div>
+
+      <!-- a-core -->
+      <div style="background:oklch(0.70 0.17 295 / 0.06);border:1px solid oklch(0.70 0.17 295 / 0.25);border-radius:10px;padding:14px 18px;margin-bottom:6px;">
+        <div style="color:var(--purple);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;margin-bottom:8px;letter-spacing:0.06em;">a-core · Infrastructure</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <span style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:3px 10px;font-size:12px;color:var(--text2);">di/ · DI Modules</span>
+          <span style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:3px 10px;font-size:12px;color:var(--text2);">scheduler/ · OBO + Handler Interception + Diagnostics</span>
+          <span style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:3px 10px;font-size:12px;color:var(--text2);">perf/ · Startup Timeline / Jank / Frame Stats / FrameMetrics</span>
+          <span style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:3px 10px;font-size:12px;color:var(--text2);">trace/ · State Restore / Export / Leak Audit / Scroll Recovery / SSIM</span>
+        </div>
+      </div>
+
+      <!-- bottom row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:2px;">
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;">
+          <div style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--orange);font-weight:700;margin-bottom:4px;">build-plugin</div>
+          <div style="font-size:12px;color:var(--text3);">ASM Bytecode Rewriting for 3rd-party SDK Handlers</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;">
+          <div style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--orange);font-weight:700;margin-bottom:4px;">macrobenchmark</div>
+          <div style="font-size:12px;color:var(--text3);">Baseline Profile + Startup Benchmark</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;">
+          <div style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--orange);font-weight:700;margin-bottom:4px;">tools/verify</div>
+          <div style="font-size:12px;color:var(--text3);">VF AI Fully Automated Screenshot Regression</div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--text2);">
+        <span>Data Flow: <code>Intent → Executor → Msg → Reducer → State</code> (MVIKotlin)</span>
+        <span>Navigation: Decompose ChildStack · KSP Auto-generated Route Serialization</span>
+      </div>
+    </div>
+
+    <!-- RULES -->
+    <div class="doc-section" id="rules">
+      <h2>Specification Layers</h2>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Layer</th><th>Carrier</th><th>Load Timing</th><th>Content Requirement</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">L0</td><td><code>CLAUDE.md</code></td><td class="desc">Auto-loaded every conversation</td><td class="desc">Architecture mental model + spec index, max 200 lines</td></tr>
+            <tr><td class="desc">L1</td><td class="desc">General instincts</td><td class="desc">Before every code change</td><td class="desc">Rules all changes must follow</td></tr>
+            <tr><td class="desc">L2</td><td class="desc">Domain instincts</td><td class="desc">When touching related code</td><td class="desc">Domain-specific rules, matched by trigger field</td></tr>
+            <tr><td class="desc">L3</td><td><code>docs/</code></td><td class="desc">When full understanding is needed</td><td class="desc">Architecture maps, in-depth design docs</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- GENERAL -->
+    <div class="doc-section" id="general">
+      <h2>General Rules — Must Read for Every Change</h2>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>File</th><th>Responsibility</th></tr></thead>
+          <tbody>
+            <tr><td><code>forbidden.yaml</code></td><td class="desc">Global forbidden patterns (34 rules)</td></tr>
+            <tr><td><code>mvi.yaml</code></td><td class="desc">MVI state management (Reducer pure functions)</td></tr>
+            <tr><td><code>component.yaml</code></td><td class="desc">Decompose Component specification</td></tr>
+            <tr><td><code>commit-convention.yaml</code></td><td class="desc">Commit message format + pre-commit validation workflow</td></tr>
+            <tr><td><code>code-review.yaml</code></td><td class="desc">Compliance review: architecture / performance / UI / DI / general checklist</td></tr>
+            <tr><td><code>debugging.yaml</code></td><td class="desc">Debugging discipline: logs first + logcat analysis, must read for runtime issues</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-purple">
+        <strong>Automatic Forbidden Pattern Interception</strong>
+        <p>Disallowed code patterns (e.g., network requests on main thread, hardcoded keys, memory leak patterns) are blocked during writing, not discovered after review.</p>
+      </div>
+    </div>
+
+    <!-- DOMAIN -->
+    <div class="doc-section" id="domain">
+      <h2>Domain Rules — Auto-loaded on Demand</h2>
+      <p>UI specs are auto-loaded when editing UI, network specs when editing networking code. Developers don't need to memorize all rules.</p>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>Trigger Scenario</th><th>Loaded File</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">Writing UI / Compose</td><td><code>ui-compose.yaml</code> + <code>i18n.yaml</code></td></tr>
+            <tr><td class="desc">Modifying App* custom components</td><td><code>custom-components.yaml</code></td></tr>
+            <tr><td class="desc">Modifying DI / Koin</td><td><code>koin-di.yaml</code></td></tr>
+            <tr><td class="desc">Modifying routes</td><td><code>route.yaml</code></td></tr>
+            <tr><td class="desc">Modifying lists / performance / Baseline Profile</td><td><code>performance.yaml</code></td></tr>
+            <tr><td class="desc">Writing tests</td><td><code>testing.yaml</code></td></tr>
+            <tr><td class="desc">Modifying state restore</td><td><code>time-travel.yaml</code></td></tr>
+            <tr><td class="desc">Refactoring / code style</td><td><code>code-patterns.yaml</code></td></tr>
+            <tr><td class="desc">Modifying network interceptors</td><td><code>network-interceptor.yaml</code></td></tr>
+            <tr><td class="desc">Analyzing SDKs</td><td><code>sdk-source-analysis.yaml</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Common Commands</h3>
+      <pre><span class="comment"># Quick unit tests (no device needed)</span>
+./gradlew :a-shared:desktopTest
+
+<span class="comment"># Coverage verification (≥80%)</span>
+./gradlew koverVerify
+
+<span class="comment"># Build Android</span>
+./gradlew :androidApp:assembleDebug
+
+<span class="comment"># Preview screenshot comparison (JVM, no device needed)</span>
+./gradlew :androidApp:verifyRoborazziDebug
+
+<span class="comment"># VF end-to-end screenshot regression (real device, full suite)</span>
+tools/verify/verify-vf.sh</pre>
+    </div>
+
+    <!-- OPENSPEC -->
+    <div class="doc-section" id="openspec">
+      <h2>OpenSpec — AI-Driven Complex Feature Development</h2>
+      <p>Large cross-module features go through the OpenSpec structured workflow, ensuring design intent is preserved throughout implementation.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <h4>AI-Generated Proposal</h4>
+            <p>Describe the feature goal, and AI automatically analyzes the impact scope and generates a technical proposal.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <h4>Technical Design</h4>
+            <p>Detailed design of module interfaces, data flows, and key decision points, with optional manual review and modifications.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-body">
+            <h4>Task Breakdown</h4>
+            <p>Break the technical design into independently executable subtasks with clear dependencies and acceptance criteria.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">04</div>
+          <div class="step-body">
+            <h4>Step-by-step Implementation per Spec</h4>
+            <p>Each implementation step follows the spec, ensuring the final code is consistent with the design intent.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-blue">
+        <strong>7 Complex Features Delivered</strong>
+        <p>Design system, performance monitoring, dev bookmarks, iOS state restore, VF recording, and more were all completed through the OpenSpec workflow, with complexity and quality well under control.</p>
+      </div>
+    </div>
+
+    <!-- DOC PRINCIPLE -->
+    <div class="doc-section" id="doc-principle">
+      <h2>Documentation Principles</h2>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-title">Minimalism</div>
+          <div class="card-desc">If it can be said in one sentence, don't use two. No redundant descriptions, repeated information, or decorative text. Choose the right format: a single rule gets one sentence, multiple mappings use tables, indexes over full text.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Progressive Disclosure</div>
+          <div class="card-desc">Information is layered on demand, avoiding information overload. L0 contains only indexes and mental models, details sink to L1-L3, each layer focuses on a single domain.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Refinement Criteria</div>
+          <div class="card-desc">MEMORY.md is a scratchpad. Patterns or lessons learned that have been validated across multiple sessions and are no longer changing get refined into yaml/docs and removed from the scratchpad.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Adding New Specs</div>
+          <div class="card-desc">First determine the layer (L0-L3) for a new spec, then choose the placement. Each L1/L2 file focuses on a single domain with no cross-references.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="doc-footer-nav">
+      <a href="../pages/vf-validation.html">← VF Auto Validation</a>
+      <a href="../pages/testing.html" class="next"><span class="label">Next</span>Testing →</a>
+    </div>
+  </main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('.doc-section');
+const links = document.querySelectorAll('.sidebar-links a:not(.other)');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.sidebar-links a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
