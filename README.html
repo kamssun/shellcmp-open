@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArchShowcase — KMP 跨平台架构</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: oklch(0.11 0.012 240);
+  --bg2: oklch(0.15 0.012 240);
+  --bg3: oklch(0.19 0.014 240);
+  --border: oklch(0.26 0.018 240);
+  --text: oklch(0.91 0.008 100);
+  --text2: oklch(0.58 0.01 240);
+  --text3: oklch(0.40 0.01 240);
+  --green: oklch(0.76 0.18 155);
+  --green-dim: oklch(0.76 0.18 155 / 0.15);
+  --blue: oklch(0.68 0.17 248);
+  --blue-dim: oklch(0.68 0.17 248 / 0.12);
+  --purple: oklch(0.70 0.17 295);
+  --purple-dim: oklch(0.70 0.17 295 / 0.12);
+  --orange: oklch(0.74 0.16 55);
+  --orange-dim: oklch(0.74 0.16 55 / 0.12);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  overflow-x: hidden;
+}
+
+/* NAV */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: oklch(0.11 0.012 240 / 0.88);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 40px;
+  display: flex; align-items: center; gap: 32px;
+  height: 52px;
+}
+.nav-logo {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700; font-size: 15px;
+  color: var(--green);
+  white-space: nowrap;
+}
+.nav-links { display: flex; gap: 4px; flex: 1; }
+.nav-links a {
+  color: var(--text2); text-decoration: none;
+  font-size: 13px; font-weight: 500;
+  padding: 6px 12px; border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+.nav-links a:hover { color: var(--text); background: var(--bg3); }
+.nav-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--text3);
+  border: 1px solid var(--border);
+  padding: 3px 10px; border-radius: 20px;
+}
+
+/* HERO */
+.hero {
+  padding: 100px 40px 80px;
+  max-width: 1100px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;
+}
+.hero-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 500;
+  color: var(--green); letter-spacing: 0.12em;
+  text-transform: uppercase; margin-bottom: 20px;
+  display: flex; align-items: center; gap: 8px;
+}
+.hero-eyebrow::before {
+  content: ''; display: block;
+  width: 20px; height: 1px; background: var(--green);
+}
+h1 {
+  font-size: clamp(38px, 5vw, 58px);
+  font-weight: 700; line-height: 1.08;
+  letter-spacing: -0.02em;
+  margin-bottom: 24px;
+}
+h1 span { color: var(--green); }
+.hero-sub {
+  color: var(--text2); font-size: 16px;
+  max-width: 460px; margin-bottom: 36px;
+  line-height: 1.7;
+}
+.badge-row {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 36px;
+}
+.badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; padding: 4px 10px;
+  border-radius: 4px; font-weight: 500;
+}
+.badge-green { background: var(--green-dim); color: var(--green); border: 1px solid oklch(0.76 0.18 155 / 0.3); }
+.badge-blue { background: var(--blue-dim); color: var(--blue); border: 1px solid oklch(0.68 0.17 248 / 0.3); }
+.badge-purple { background: var(--purple-dim); color: var(--purple); border: 1px solid oklch(0.70 0.17 295 / 0.3); }
+.badge-orange { background: var(--orange-dim); color: var(--orange); border: 1px solid oklch(0.74 0.16 55 / 0.3); }
+
+.cta-row { display: flex; gap: 12px; align-items: center; }
+.btn-primary {
+  background: var(--green); color: var(--bg);
+  padding: 10px 22px; border-radius: 8px;
+  font-weight: 600; font-size: 14px; text-decoration: none;
+  transition: opacity 0.15s;
+}
+.btn-primary:hover { opacity: 0.88; }
+.btn-ghost {
+  color: var(--text2); padding: 10px 18px;
+  border-radius: 8px; font-weight: 500; font-size: 14px;
+  text-decoration: none; border: 1px solid var(--border);
+  transition: color 0.15s, border-color 0.15s;
+}
+.btn-ghost:hover { color: var(--text); border-color: oklch(0.40 0.01 240); }
+
+/* ARCH DIAGRAM */
+.arch-visual {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.arch-visual::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 70% 30%, oklch(0.76 0.18 155 / 0.06) 0%, transparent 60%);
+  pointer-events: none;
+}
+.arch-platforms {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+  margin-bottom: 12px;
+}
+.arch-platform-box {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 8px;
+  text-align: center;
+  font-size: 11px;
+  transition: border-color 0.2s, background 0.2s;
+  cursor: default;
+}
+.arch-platform-box:hover {
+  border-color: var(--green);
+  background: var(--green-dim);
+}
+.arch-platform-box .icon { font-size: 16px; display: block; margin-bottom: 4px; }
+.arch-platform-box .label { color: var(--text2); font-size: 10px; }
+
+.arch-arrow {
+  text-align: center; color: var(--text3);
+  font-size: 18px; margin: 2px 0; line-height: 1;
+}
+.arch-layer {
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin: 6px 0;
+  border: 1px solid;
+}
+.arch-layer-shared {
+  background: oklch(0.76 0.18 155 / 0.06);
+  border-color: oklch(0.76 0.18 155 / 0.3);
+}
+.arch-layer-platform {
+  background: oklch(0.68 0.17 248 / 0.06);
+  border-color: oklch(0.68 0.17 248 / 0.25);
+}
+.arch-layer-core {
+  background: oklch(0.70 0.17 295 / 0.06);
+  border-color: oklch(0.70 0.17 295 / 0.25);
+}
+.arch-layer-title {
+  font-weight: 700; font-size: 11px; margin-bottom: 4px;
+}
+.arch-layer-shared .arch-layer-title { color: var(--green); }
+.arch-layer-platform .arch-layer-title { color: var(--blue); }
+.arch-layer-core .arch-layer-title { color: var(--purple); }
+.arch-layer-sub { color: var(--text3); font-size: 10px; }
+.arch-layer-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.arch-tag {
+  font-size: 9px; padding: 2px 7px; border-radius: 3px;
+  border: 1px solid var(--border); color: var(--text2);
+}
+
+/* FLYWHEEL */
+.flywheel-section {
+  max-width: 1100px; margin: 0 auto;
+  padding: 0 40px 80px;
+}
+.section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--text3);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.flywheel-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px 40px;
+  position: relative; overflow: hidden;
+}
+.flywheel-card::before {
+  content: '';
+  position: absolute; top: -60px; right: -60px;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, var(--green-dim) 0%, transparent 70%);
+  pointer-events: none;
+}
+.flywheel-title {
+  font-size: 22px; font-weight: 600; margin-bottom: 16px;
+}
+.flywheel-items {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.flywheel-item {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px; color: var(--text2);
+  display: flex; align-items: center; gap: 8px;
+}
+.flywheel-item .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green); flex-shrink: 0;
+}
+
+/* FEATURES */
+.features-section {
+  max-width: 1100px; margin: 0 auto;
+  padding: 0 40px 80px;
+}
+.features-section h2 {
+  font-size: 32px; font-weight: 700;
+  letter-spacing: -0.02em; margin-bottom: 8px;
+}
+.features-section .sub { color: var(--text2); margin-bottom: 40px; }
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.feature-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  transition: border-color 0.2s, transform 0.2s, background 0.2s;
+  cursor: pointer;
+  text-decoration: none;
+  display: block;
+  color: inherit;
+  position: relative;
+}
+.feature-card .card-arrow {
+  position: absolute; top: 22px; right: 22px;
+  font-size: 13px; color: var(--text3);
+  transition: color 0.2s, transform 0.2s;
+}
+.feature-card:hover .card-arrow {
+  color: var(--text2);
+  transform: translate(2px, -2px);
+}
+.feature-card:hover {
+  transform: translateY(-2px);
+}
+.feature-card:hover.fc-green { border-color: oklch(0.76 0.18 155 / 0.5); }
+.feature-card:hover.fc-blue { border-color: oklch(0.68 0.17 248 / 0.5); }
+.feature-card:hover.fc-purple { border-color: oklch(0.70 0.17 295 / 0.5); }
+.feature-card:hover.fc-orange { border-color: oklch(0.74 0.16 55 / 0.5); }
+
+.feature-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; margin-bottom: 16px;
+}
+.fc-green .feature-icon { background: var(--green-dim); }
+.fc-blue .feature-icon { background: var(--blue-dim); }
+.fc-purple .feature-icon { background: var(--purple-dim); }
+.fc-orange .feature-icon { background: var(--orange-dim); }
+
+.feature-title {
+  font-size: 15px; font-weight: 600; margin-bottom: 8px;
+}
+.feature-desc {
+  font-size: 13px; color: var(--text2); line-height: 1.6;
+}
+.feature-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.feature-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; padding: 2px 8px;
+  border-radius: 4px;
+}
+.fc-green .feature-tag { background: var(--green-dim); color: var(--green); }
+.fc-blue .feature-tag { background: var(--blue-dim); color: var(--blue); }
+.fc-purple .feature-tag { background: var(--purple-dim); color: var(--purple); }
+.fc-orange .feature-tag { background: var(--orange-dim); color: var(--orange); }
+
+/* WIDE CARD */
+.feature-card.wide { grid-column: span 2; }
+.feature-card.full { grid-column: span 3; }
+
+/* TABLE */
+.table-section {
+  max-width: 1100px; margin: 0 auto;
+  padding: 0 40px 80px;
+}
+.table-section h2 {
+  font-size: 32px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px;
+}
+.table-section .sub { color: var(--text2); margin-bottom: 32px; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+thead tr {
+  border-bottom: 1px solid var(--border);
+}
+th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+td {
+  padding: 13px 16px;
+  border-bottom: 1px solid oklch(0.26 0.018 240 / 0.5);
+  vertical-align: top;
+}
+tbody tr:hover td { background: var(--bg2); }
+tbody tr:last-child td { border-bottom: none; }
+.mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--green); }
+td.desc { color: var(--text2); font-size: 13px; }
+
+/* BUILD */
+.build-section {
+  max-width: 1100px; margin: 0 auto;
+  padding: 0 40px 80px;
+}
+.build-section h2 {
+  font-size: 32px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px;
+}
+.build-section .sub { color: var(--text2); margin-bottom: 32px; }
+.build-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.build-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 24px;
+}
+.build-card-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 14px;
+}
+.build-card-icon { font-size: 20px; }
+.build-card-name { font-weight: 600; font-size: 14px; }
+.build-card-sub { font-size: 12px; color: var(--text3); }
+pre {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--green);
+  overflow-x: auto;
+  line-height: 1.8;
+}
+pre .comment { color: var(--text3); }
+pre .cmd { color: oklch(0.85 0.08 155); }
+
+/* TESTING */
+.testing-section {
+  max-width: 1100px; margin: 0 auto;
+  padding: 0 40px 80px;
+}
+.testing-section h2 {
+  font-size: 32px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px;
+}
+.testing-section .sub { color: var(--text2); margin-bottom: 32px; }
+.testing-tiers {
+  display: flex; flex-direction: column; gap: 0;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.tier {
+  display: grid;
+  grid-template-columns: 200px 1fr 100px;
+  align-items: center;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+  transition: background 0.15s;
+}
+.tier:last-child { border-bottom: none; }
+.tier:hover { background: var(--bg3); }
+.tier-name { font-weight: 600; font-size: 14px; }
+.tier-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--text3);
+}
+.tier-desc { font-size: 13px; color: var(--text2); }
+.tier-speed {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px; border-radius: 20px;
+  text-align: center;
+  justify-self: end;
+}
+.speed-fast { background: var(--green-dim); color: var(--green); }
+.speed-mid { background: var(--blue-dim); color: var(--blue); }
+.speed-slow { background: var(--orange-dim); color: var(--orange); }
+
+/* STACK */
+.stack-section {
+  max-width: 1100px; margin: 0 auto;
+  padding: 0 40px 80px;
+}
+.stack-section h2 {
+  font-size: 32px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 32px;
+}
+.stack-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+}
+.stack-item {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex; align-items: center; gap: 12px;
+  transition: border-color 0.2s;
+}
+.stack-item:hover { border-color: oklch(0.40 0.01 240); }
+.stack-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.stack-item-name { font-weight: 600; font-size: 14px; }
+.stack-item-ver {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--text3);
+}
+
+/* FOOTER */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 40px;
+  max-width: 1100px; margin: 0 auto;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.footer-logo {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700; color: var(--green);
+}
+.footer-links { display: flex; gap: 24px; }
+.footer-links a {
+  color: var(--text3); text-decoration: none; font-size: 13px;
+  transition: color 0.15s;
+}
+.footer-links a:hover { color: var(--text2); }
+
+/* TWEAKS PANEL */
+#tweaks-panel {
+  display: none;
+  position: fixed; bottom: 24px; right: 24px;
+  width: 260px;
+  background: oklch(0.17 0.014 240 / 0.96);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  z-index: 999;
+  box-shadow: 0 8px 32px oklch(0 0 0 / 0.4);
+}
+#tweaks-panel h3 {
+  font-size: 12px; font-weight: 700;
+  color: var(--text2); letter-spacing: 0.08em;
+  text-transform: uppercase; margin-bottom: 16px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.tweak-row { margin-bottom: 14px; }
+.tweak-label {
+  font-size: 11px; color: var(--text3); margin-bottom: 6px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.tweak-options { display: flex; gap: 6px; flex-wrap: wrap; }
+.tweak-btn {
+  font-size: 11px; padding: 5px 12px;
+  border-radius: 6px; border: 1px solid var(--border);
+  background: var(--bg3); color: var(--text2);
+  cursor: pointer; transition: all 0.15s;
+  font-family: 'JetBrains Mono', monospace;
+}
+.tweak-btn:hover, .tweak-btn.active {
+  border-color: var(--green); color: var(--green);
+  background: var(--green-dim);
+}
+input[type=range] {
+  width: 100%; accent-color: var(--green);
+  height: 4px; cursor: pointer;
+}
+
+/* DIVIDER */
+.divider {
+  max-width: 1100px; margin: 0 auto 80px;
+  padding: 0 40px;
+  border-top: 1px solid var(--border);
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; gap: 40px; }
+  .features-grid { grid-template-columns: 1fr 1fr; }
+  .feature-card.wide { grid-column: span 2; }
+  .feature-card.full { grid-column: span 2; }
+  .build-grid { grid-template-columns: 1fr; }
+  .stack-grid { grid-template-columns: repeat(2, 1fr); }
+  .tier { grid-template-columns: 1fr 80px; }
+  .tier-desc { display: none; }
+}
+@media (max-width: 600px) {
+  nav { padding: 0 20px; }
+  .hero, .features-section, .table-section, .build-section, .testing-section, .stack-section, .flywheel-section { padding-left: 20px; padding-right: 20px; }
+  .features-grid { grid-template-columns: 1fr; }
+  .feature-card.wide, .feature-card.full { grid-column: span 1; }
+  .nav-links { display: none; }
+}
+
+/* ANIMATIONS */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.hero-content { animation: fadeUp 0.6s ease both; }
+.arch-visual { animation: fadeUp 0.6s 0.15s ease both; }
+
+/* CURSOR BLINK */
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+.cursor {
+  display: inline-block; width: 2px; height: 1em;
+  background: var(--green); margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">ArchShowcase</div>
+  <div class="nav-links">
+    <a href="#features">核心能力</a>
+    <a href="#modules">模块</a>
+    <a href="#build">构建</a>
+    <a href="#testing">测试</a>
+    <a href="#stack">技术栈</a>
+  </div>
+  <span class="nav-badge">KMP · Kotlin 2.3</span>
+</nav>
+
+<!-- HERO -->
+<section style="max-width:1100px;margin:0 auto;padding:0 40px;">
+<div class="hero">
+  <div class="hero-content">
+    <div class="hero-eyebrow">KMP 跨平台架构</div>
+    <h1>一份代码<br><span>三端交付</span></h1>
+    <p class="hero-sub">KMP 跨平台 App 外壳项目，Android / iOS / Desktop 共享 99% 代码。MVI 驱动，AI 全自动验证，性能监控闭环。<span class="cursor"></span></p>
+    <div class="badge-row">
+      <span class="badge badge-green">Android</span>
+      <span class="badge badge-blue">iOS</span>
+      <span class="badge badge-purple">Desktop</span>
+      <span class="badge badge-orange">Compose Multiplatform</span>
+      <span class="badge badge-green">MVIKotlin</span>
+      <span class="badge badge-blue">KSP</span>
+    </div>
+    <div class="cta-row">
+      <a href="https://github.com/kamssun/shellcmp-open" class="btn-primary">查看源码</a>
+      <a href="#features" class="btn-ghost">核心能力 →</a>
+    </div>
+  </div>
+  <div class="arch-visual">
+    <div style="font-size:10px;color:var(--text3);margin-bottom:14px;letter-spacing:0.06em;">ARCHITECTURE</div>
+    <div class="arch-platforms">
+      <div class="arch-platform-box">
+        <span class="icon">🤖</span>
+        <div style="font-weight:700;">androidApp</div>
+        <div class="label">平台入口（薄壳）</div>
+      </div>
+      <div class="arch-platform-box">
+        <span class="icon">🍎</span>
+        <div style="font-weight:700;">iosApp</div>
+        <div class="label">平台入口（薄壳）</div>
+      </div>
+      <div class="arch-platform-box">
+        <span class="icon">🖥</span>
+        <div style="font-weight:700;">desktopApp</div>
+        <div class="label">平台入口（薄壳）</div>
+      </div>
+    </div>
+    <div class="arch-arrow">↓</div>
+    <div class="arch-layer arch-layer-shared">
+      <div class="arch-layer-title">a-shared · 99% 共享</div>
+      <div class="arch-layer-sub">Compose UI + MVI 业务逻辑</div>
+      <div class="arch-layer-tags">
+        <span class="arch-tag">Compose Multiplatform</span>
+        <span class="arch-tag">Decompose</span>
+        <span class="arch-tag">MVIKotlin</span>
+        <span class="arch-tag">i18n</span>
+      </div>
+    </div>
+    <div class="arch-layer arch-layer-platform">
+      <div class="arch-layer-title">a-platform · SDK 桥接</div>
+      <div class="arch-layer-sub">expect / actual</div>
+      <div class="arch-layer-tags">
+        <span class="arch-tag">Auth</span>
+        <span class="arch-tag">Pay</span>
+        <span class="arch-tag">IM · RTC</span>
+        <span class="arch-tag">归因</span>
+      </div>
+    </div>
+    <div class="arch-layer arch-layer-core">
+      <div class="arch-layer-title">a-core · 基础设施</div>
+      <div class="arch-layer-sub">DI · 调度器 · 状态回溯</div>
+      <div class="arch-layer-tags">
+        <span class="arch-tag">Koin</span>
+        <span class="arch-tag">OBO Dispatcher</span>
+        <span class="arch-tag">KSP</span>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- VIDEOS -->
+<section class="videos-section">
+  <div class="section-label">视频演示</div>
+  <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;">
+
+    <a class="video-card" href="https://github.com/user-attachments/assets/ac1d9b98-64d5-4a18-8b31-c4d0310b704c" target="_blank" rel="noopener">
+      <div class="video-thumb">
+        <div class="video-play">▶</div>
+        <div class="video-emoji">💻</div>
+      </div>
+      <div class="video-label">Desktop 热重载演示</div>
+      <div class="video-sub">改代码秒级生效</div>
+    </a>
+
+    <a class="video-card" href="https://github.com/user-attachments/assets/4f834f16-a44f-4448-baa0-48c0496d8768" target="_blank" rel="noopener">
+      <div class="video-thumb">
+        <div class="video-play">▶</div>
+        <div class="video-emoji">⏪</div>
+      </div>
+      <div class="video-label">MVI 状态回溯演示</div>
+      <div class="video-sub">时间旅行与开发书签</div>
+    </a>
+
+    <a class="video-card" href="https://github.com/user-attachments/assets/382f5490-8390-4a8d-aaf1-234ae785181c" target="_blank" rel="noopener">
+      <div class="video-thumb">
+        <div class="video-play">▶</div>
+        <div class="video-emoji">⏱️</div>
+      </div>
+      <div class="video-label">OBO 调度器演示</div>
+      <div class="video-sub">解决消息积压，保证流畅</div>
+    </a>
+
+    <a class="video-card" href="https://github.com/user-attachments/assets/9cd654b1-b219-4878-8a59-df023b9c9c90" target="_blank" rel="noopener">
+      <div class="video-thumb">
+        <div class="video-play">▶</div>
+        <div class="video-emoji">🤖</div>
+      </div>
+      <div class="video-label">VF 自动化回归演示</div>
+      <div class="video-sub">零手写断言的全链路验证</div>
+    </a>
+
+    <a class="video-card" href="https://github.com/user-attachments/assets/0b2052ac-f67d-478c-a751-1024f0d23ee7" target="_blank" rel="noopener">
+      <div class="video-thumb">
+        <div class="video-play">▶</div>
+        <div class="video-emoji">💬</div>
+      </div>
+      <div class="video-label">极限并发消息模拟</div>
+      <div class="video-sub">微信级消息洪峰丝滑体验</div>
+    </a>
+
+  </div>
+  <div style="margin-top:8px;font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;">
+    * 均在 Pixel 4a Debug 环境录制，Release 包性能更佳
+  </div>
+</section>
+
+
+
+<style>
+.videos-section {
+  max-width: 1100px; margin: 0 auto;
+  padding: 0 40px 80px;
+}
+.video-card {
+  flex-shrink: 0;
+  width: 200px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.video-card:hover {
+  border-color: oklch(0.76 0.18 155 / 0.5);
+  transform: translateY(-2px);
+}
+.video-thumb {
+  height: 110px;
+  background: var(--bg3);
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  font-size: 36px;
+}
+.video-play {
+  position: absolute;
+  width: 36px; height: 36px;
+  background: oklch(0.76 0.18 155 / 0.9);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: var(--bg);
+  opacity: 0; transition: opacity 0.2s;
+  padding-left: 2px;
+}
+.video-card:hover .video-play { opacity: 1; }
+.video-emoji { font-size: 32px; }
+.video-label {
+  padding: 10px 12px 4px;
+  font-size: 13px; font-weight: 600;
+}
+.video-sub {
+  padding: 0 12px 12px;
+  font-size: 11px; color: var(--text3);
+  line-height: 1.4;
+}
+@media (max-width: 600px) {
+  .videos-section { padding-left: 20px; padding-right: 20px; }
+}
+</style>
+
+<script>
+
+</script>
+
+<!-- ONE CODEBASE -->
+<section class="onecode-section">
+  <div class="section-label">核心价值</div>
+  <div class="onecode-grid">
+    <div class="onecode-main">
+      <div class="onecode-eyebrow">一份代码，三端交付</div>
+      <h2 class="onecode-title">新增页面只改 Kotlin<br>三端同时获得</h2>
+      <p class="onecode-desc">bug 修一次，全端生效。不存在"Android 修了 iOS 忘了"。对比行业常规做法——养 Android + iOS 两个团队，维护两套代码，每个功能写两遍，每个 bug 修两遍——这套架构用一个人做到三端一致。</p>
+      <a href="docs/pages/cross-platform.html" class="onecode-link">查看跨端方案对比 →</a>
+    </div>
+    <div class="onecode-cards">
+      <div class="onecode-card">
+        <div class="onecode-card-icon">💻</div>
+        <div class="onecode-card-title">Desktop 热重载</div>
+        <div class="onecode-card-desc">改代码秒级生效，不需要等编译、安装、重启。日常开发在 Desktop 上快速迭代，体验接近前端热更新。</div>
+      </div>
+      <div class="onecode-card">
+        <div class="onecode-card-icon">🔁</div>
+        <div class="onecode-card-title">编译器保证一致性</div>
+        <div class="onecode-card-desc">逻辑共用，不存在两端行为不一致。不靠人记、不靠流程约束，靠编译器。</div>
+      </div>
+      <div class="onecode-card">
+        <div class="onecode-card-icon">📊</div>
+        <div class="onecode-card-title">实测 >90% 共享</div>
+        <div class="onecode-card-desc">~8,200 行 commonMain，iOS Swift 代码仅 ~1,004 行（SDK 桥接），ContentView.swift 仅 22 行。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+.onecode-section {
+  max-width: 1100px; margin: 0 auto;
+  padding: 0 40px 80px;
+}
+.onecode-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start;
+}
+.onecode-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--green);
+  letter-spacing: 0.12em; text-transform: uppercase;
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.onecode-eyebrow::before { content:''; display:block; width:20px; height:1px; background:var(--green); }
+.onecode-title {
+  font-size: clamp(22px, 3vw, 32px); font-weight: 700;
+  letter-spacing: -0.02em; line-height: 1.15;
+  margin-bottom: 16px;
+}
+.onecode-desc { color: var(--text2); font-size: 15px; line-height: 1.75; margin-bottom: 20px; }
+.onecode-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--green); font-size: 13px; font-weight: 600;
+  text-decoration: none;
+  padding: 8px 16px; border-radius: 8px;
+  border: 1px solid oklch(0.76 0.18 155 / 0.3);
+  background: var(--green-dim);
+  transition: opacity 0.15s;
+}
+.onecode-link:hover { opacity: 0.8; }
+.onecode-cards { display: flex; flex-direction: column; gap: 12px; }
+.onecode-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px 20px;
+  display: flex; gap: 14px; align-items: flex-start;
+}
+.onecode-card-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+.onecode-card-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.onecode-card-desc { font-size: 13px; color: var(--text2); line-height: 1.6; }
+@media (max-width: 800px) {
+  .onecode-grid { grid-template-columns: 1fr; gap: 28px; }
+  .onecode-section { padding-left: 20px; padding-right: 20px; }
+}
+</style>
+
+<!-- FLYWHEEL -->
+<section class="flywheel-section">
+  <div class="section-label">架构飞轮</div>
+  <div class="flywheel-card">
+    <div class="flywheel-title">每个能力互相增强，形成复利飞轮</div>
+    <div class="flywheel-items">
+      <div class="flywheel-item"><span class="dot"></span>MVI 确定性 → 状态回溯成为可能</div>
+      <div class="flywheel-item"><span class="dot"></span>状态回溯 → VF 全自动验证成为可能</div>
+      <div class="flywheel-item"><span class="dot"></span>VF 覆盖率越高 → Bug 越少</div>
+      <div class="flywheel-item"><span class="dot"></span>OBO 调度器 → 性能监控精准定位</div>
+      <div class="flywheel-item"><span class="dot"></span>全自动埋点 → 数据采集零成本</div>
+      <div class="flywheel-item"><span class="dot"></span>KSP 代码生成 → 降低接入门槛</div>
+      <div class="flywheel-item"><span class="dot"></span>AI 规范体系 → 新人也写不出烂代码</div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features" class="features-section">
+  <div class="section-label">核心能力</div>
+  <h2>八大核心系统</h2>
+  <p class="sub">每个系统独立可用，协同时形成完整的工程质量飞轮</p>
+
+  <div class="features-grid">
+
+    <!-- MVI State -->
+    <a href="docs/pages/state-restore.html" class="feature-card fc-green wide">
+      <span class="card-arrow">↗</span>
+      <div class="feature-icon">⏪</div>
+      <div class="feature-title">MVI 状态回溯 — 一切的基石</div>
+      <div class="feature-desc">严格的单向数据流架构天然产出完整的操作历史。每一次用户操作都被记录，状态变化完全可追溯、可重放。是 VF 验证、录制系统、服务端数据固化的根基——没有这个基石，后面的一切都不可能实现。</div>
+      <div class="feature-tags">
+        <span class="feature-tag">交互回溯</span>
+        <span class="feature-tag">状态导出/导入</span>
+        <span class="feature-tag">开发书签</span>
+        <span class="feature-tag">泄漏审计</span>
+        <span class="feature-tag">线上 Bug 复现</span>
+      </div>
+    </a>
+
+    <!-- VF -->
+    <a href="docs/pages/vf-validation.html" class="feature-card fc-blue">
+      <span class="card-arrow">↗</span>
+      <div class="feature-icon">🤖</div>
+      <div class="feature-title">AI 全自动验证（VF）</div>
+      <div class="feature-desc">不只是 UI 截图对比——任何导致界面变化的 Bug 都会被捕获。录制完整用户操作路径 + 服务端数据快照，验证时原样重放并对比截图。比传统 E2E 快一个量级。</div>
+      <div class="feature-tags">
+        <span class="feature-tag">变更分析</span>
+        <span class="feature-tag">路径推断</span>
+        <span class="feature-tag">自动录制</span>
+        <span class="feature-tag">SSIM 截图对比</span>
+        <span class="feature-tag">服务端数据固化</span>
+      </div>
+    </a>
+
+    <!-- OBO -->
+    <a href="docs/pages/obo-dispatcher.html" class="feature-card fc-orange">
+      <span class="card-arrow">↗</span>
+      <div class="feature-icon">⏱️</div>
+      <div class="feature-title">OBO 调度器 — 不卡顿</div>
+      <div class="feature-desc">队列里永远最多只有一个任务。VSYNC 到达时队列几乎是空的，屏障机制正常生效。同时让每个任务成为独立消息，性能监控能精准定位到"就是这个任务慢了 50ms"。</div>
+      <div class="feature-tags">
+        <span class="feature-tag">消息积压消除</span>
+        <span class="feature-tag">三方 SDK 拦截</span>
+        <span class="feature-tag">来源级诊断</span>
+        <span class="feature-tag">三端统一</span>
+      </div>
+    </a>
+
+    <!-- Perf -->
+    <a href="docs/pages/perf-monitor.html" class="feature-card fc-purple wide">
+      <span class="card-arrow">↗</span>
+      <div class="feature-icon">📊</div>
+      <div class="feature-title">全链路性能诊断闭环</div>
+      <div class="feature-desc">自研运行时性能监控，不依赖第三方，覆盖三端。启动时间线树形展示每一步耗时；每帧自动拆解为 6 个阶段并与 btrace 火焰图精确对齐；btrace + AI 自动分析 trace 数据并给出优化建议。</div>
+      <div class="feature-tags">
+        <span class="feature-tag">启动时间线</span>
+        <span class="feature-tag">卡顿诊断</span>
+        <span class="feature-tag">GC 压力检测</span>
+        <span class="feature-tag">帧拆解 + trace 对齐</span>
+        <span class="feature-tag">btrace + AI 分析</span>
+        <span class="feature-tag">主线程慢任务监控</span>
+      </div>
+    </a>
+
+    <!-- Tracking -->
+    <a href="docs/pages/auto-tracking.html" class="feature-card fc-green">
+      <span class="card-arrow">↗</span>
+      <div class="feature-icon">📍</div>
+      <div class="feature-title">全自动埋点</div>
+      <div class="feature-desc">四类事件（页面、交互、曝光、前后台）全自动采集。新增带埋点列表页 = <code style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--green)">ExposureLazyColumn</code> + <code style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--green)">appClickable</code>，不写任何埋点代码，事件名、业务参数、脱敏全部自动完成。</div>
+      <div class="feature-tags">
+        <span class="feature-tag">KSP 自动映射</span>
+        <span class="feature-tag">三层脱敏</span>
+        <span class="feature-tag">曝光追踪</span>
+      </div>
+    </a>
+
+    <!-- KSP -->
+    <a href="docs/pages/ksp-codegen.html" class="feature-card fc-blue">
+      <span class="card-arrow">↗</span>
+      <div class="feature-icon">⚙️</div>
+      <div class="feature-title">KSP 代码生成</div>
+      <div class="feature-desc">四个注解消除大量重复代码。新增一个带回溯 + 全自动验证的页面 = 写业务代码 + 标两个注解，其余全部自动生成。新人看到注解就知道这个模块具备哪些能力。</div>
+      <div class="feature-tags">
+        <span class="feature-tag">@Replayable</span>
+        <span class="feature-tag">@RouteRegistry</span>
+        <span class="feature-tag">@VfResolvable</span>
+        <span class="feature-tag">@CustomState</span>
+      </div>
+    </a>
+
+    <!-- AI Spec -->
+    <a href="docs/pages/ai-spec.html" class="feature-card fc-purple">
+      <span class="card-arrow">↗</span>
+      <div class="feature-icon">🛡️</div>
+      <div class="feature-title">AI 规范体系</div>
+      <div class="feature-desc">34 条禁止项 + 分层规则体系，由 AI 在编码过程中实时约束。改 UI 时自动加载 UI 规范，改网络时自动加载网络规范。提交前自动化检查不可绕过。</div>
+      <div class="feature-tags">
+        <span class="feature-tag">禁止项拦截</span>
+        <span class="feature-tag">按需加载规则</span>
+        <span class="feature-tag">OpenSpec 流程</span>
+      </div>
+    </a>
+
+    <!-- Custom UI -->
+    <a href="docs/pages/custom-ui.html" class="feature-card fc-orange">
+      <span class="card-arrow">↗</span>
+      <div class="feature-icon">🎨</div>
+      <div class="feature-title">自定义 UI + 极少重组</div>
+      <div class="feature-desc">移除 Material3 组件库，自建轻量组件体系。智能跳过、延迟读取、计算缓存三策略联动，让只有数据真正变化的组件才刷新，其余全部跳过。</div>
+      <div class="feature-tags">
+        <span class="feature-tag">去 Material3</span>
+        <span class="feature-tag">智能跳过</span>
+        <span class="feature-tag">延迟读取</span>
+        <span class="feature-tag">计算缓存</span>
+      </div>
+    </a>
+
+  </div>
+</section>
+
+<!-- MODULES TABLE -->
+<section id="modules" class="table-section">
+  <div class="section-label">项目结构</div>
+  <h2>模块一览</h2>
+  <p class="sub">清晰的职责边界，每个模块都可独立测试</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:220px;">模块</th>
+        <th>职责</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="mono">a-core</td>
+        <td class="desc">基础设施：DI、调度器、状态回溯 / 泄漏审计 / SSIM 截图验证</td>
+      </tr>
+      <tr>
+        <td class="mono">a-platform</td>
+        <td class="desc">平台 SDK 桥接：Auth、Pay、IM、RTC、归因、NetworkRecorder</td>
+      </tr>
+      <tr>
+        <td class="mono">a-shared</td>
+        <td class="desc">共享 UI 与业务（Compose Multiplatform）：MVI + i18n</td>
+      </tr>
+      <tr>
+        <td class="mono">ksp-annotations<br>ksp-processor</td>
+        <td class="desc"><code style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--green)">@Replayable</code> / <code style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--green)">@CustomState</code> / <code style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--green)">@MemoryTrackable</code> / <code style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--green)">@RouteRegistry</code> / <code style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--green)">@VfResolvable</code> 代码生成</td>
+      </tr>
+      <tr>
+        <td class="mono">build-plugin</td>
+        <td class="desc">Gradle 构建插件：ASM 字节码改写三方 SDK Handler 调用，收束到 OBO 调度器</td>
+      </tr>
+      <tr>
+        <td class="mono">androidApp / iosApp<br>desktopApp</td>
+        <td class="desc">平台入口（薄壳）</td>
+      </tr>
+      <tr>
+        <td class="mono">macrobenchmark</td>
+        <td class="desc">Baseline Profile 生成 + 启动基准测试（Android）</td>
+      </tr>
+      <tr>
+        <td class="mono">tools/btrace</td>
+        <td class="desc">btrace (RheaTrace) 3.0 性能追踪工具</td>
+      </tr>
+      <tr>
+        <td class="mono">tools/verify</td>
+        <td class="desc">VF 截图回归：SSIM 对比引擎 + 录制 / 验证脚本</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- BUILD -->
+<section id="build" class="build-section">
+  <div class="section-label">快速开始</div>
+  <h2>构建运行</h2>
+  <p class="sub">三端共享代码，各自一条命令启动</p>
+
+  <div class="build-grid">
+    <div class="build-card">
+      <div class="build-card-header">
+        <span class="build-card-icon">🤖</span>
+        <div>
+          <div class="build-card-name">Android</div>
+          <div class="build-card-sub">assembleDebug</div>
+        </div>
+      </div>
+      <pre><span class="comment"># 编译 Debug 包</span>
+<span class="cmd">./gradlew</span> :androidApp:assembleDebug
+
+<span class="comment"># 生成 Baseline Profile</span>
+<span class="cmd">./gradlew</span> :androidApp:generateBaselineProfile</pre>
+    </div>
+    <div class="build-card">
+      <div class="build-card-header">
+        <span class="build-card-icon">🖥</span>
+        <div>
+          <div class="build-card-name">Desktop</div>
+          <div class="build-card-sub">热重载开发</div>
+        </div>
+      </div>
+      <pre><span class="comment"># 启动 Desktop（支持热重载）</span>
+<span class="cmd">./gradlew</span> :desktopApp:run
+
+<span class="comment"># 代码改动秒级生效</span>
+<span class="comment"># 无需重启 App</span></pre>
+    </div>
+    <div class="build-card">
+      <div class="build-card-header">
+        <span class="build-card-icon">🍎</span>
+        <div>
+          <div class="build-card-name">iOS</div>
+          <div class="build-card-sub">Xcode 工程</div>
+        </div>
+      </div>
+      <pre><span class="comment"># 打开 Xcode 工程</span>
+<span class="cmd">open</span> iosApp/iosApp.xcworkspace
+
+<span class="comment"># 启动基准测试</span>
+<span class="cmd">./gradlew</span> :macrobenchmark:connectedBenchmarkAndroidTest</pre>
+    </div>
+  </div>
+</section>
+
+<!-- TESTING -->
+<section id="testing" class="testing-section">
+  <div class="section-label">质量保障</div>
+  <h2>多层测试体系</h2>
+  <p class="sub">从快到慢、从细到粗的五层防线，全部自动化，不靠人肉回归</p>
+
+  <div class="testing-tiers">
+    <div class="tier">
+      <div>
+        <div class="tier-name">单元测试</div>
+        <div class="tier-num">01 / 05</div>
+      </div>
+      <div class="tier-desc">三个模块（core / platform / shared）均有独立测试，Desktop 上跑无需设备</div>
+      <div class="tier-speed speed-fast">秒级</div>
+    </div>
+    <div class="tier">
+      <div>
+        <div class="tier-name">覆盖率门禁</div>
+        <div class="tier-num">02 / 05</div>
+      </div>
+      <div class="tier-desc">Kover 聚合覆盖率 ≥80% 硬性要求，低于阈值构建直接失败</div>
+      <div class="tier-speed speed-fast">秒级</div>
+    </div>
+    <div class="tier">
+      <div>
+        <div class="tier-name">Preview 截图对比</div>
+        <div class="tier-num">03 / 05</div>
+      </div>
+      <div class="tier-desc">Roborazzi 自动扫描所有 @Preview，基于完整 Koin DI 环境，接近真实运行状态的组件渲染</div>
+      <div class="tier-speed speed-mid">十秒级</div>
+    </div>
+    <div class="tier">
+      <div>
+        <div class="tier-name">VF 全自动验证</div>
+        <div class="tier-num">04 / 05</div>
+      </div>
+      <div class="tier-desc">操作路径级回归，覆盖逻辑 + UI，服务端数据固化，零手写断言</div>
+      <div class="tier-speed speed-slow">分钟级</div>
+    </div>
+    <div class="tier">
+      <div>
+        <div class="tier-name">E2E 端到端</div>
+        <div class="tier-num">05 / 05</div>
+      </div>
+      <div class="tier-desc">Maestro 支持 Android + iOS 真机全流程测试</div>
+      <div class="tier-speed speed-slow">分钟级</div>
+    </div>
+  </div>
+</section>
+
+<!-- TECH STACK -->
+<section id="stack" class="stack-section">
+  <div class="section-label">技术选型</div>
+  <h2>技术栈</h2>
+
+  <div class="stack-grid">
+    <div class="stack-item">
+      <div class="stack-dot" style="background:var(--orange)"></div>
+      <div>
+        <div class="stack-item-name">Kotlin</div>
+        <div class="stack-item-ver">2.3</div>
+      </div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-dot" style="background:var(--blue)"></div>
+      <div>
+        <div class="stack-item-name">Compose Multiplatform</div>
+        <div class="stack-item-ver">跨端 UI</div>
+      </div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-dot" style="background:var(--green)"></div>
+      <div>
+        <div class="stack-item-name">MVIKotlin</div>
+        <div class="stack-item-ver">MVI 架构</div>
+      </div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-dot" style="background:var(--purple)"></div>
+      <div>
+        <div class="stack-item-name">Decompose</div>
+        <div class="stack-item-ver">导航 / 生命周期</div>
+      </div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-dot" style="background:var(--green)"></div>
+      <div>
+        <div class="stack-item-name">Koin</div>
+        <div class="stack-item-ver">依赖注入</div>
+      </div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-dot" style="background:var(--blue)"></div>
+      <div>
+        <div class="stack-item-name">Ktor</div>
+        <div class="stack-item-ver">网络请求</div>
+      </div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-dot" style="background:var(--orange)"></div>
+      <div>
+        <div class="stack-item-name">KSP</div>
+        <div class="stack-item-ver">代码生成</div>
+      </div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-dot" style="background:var(--purple)"></div>
+      <div>
+        <div class="stack-item-name">Roborazzi + Maestro</div>
+        <div class="stack-item-ver">测试体系</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<div style="max-width:1100px;margin:0 auto;padding:0 40px 0;">
+  <div style="border-top:1px solid var(--border);"></div>
+</div>
+<footer>
+  <div class="footer-logo">ArchShowcase</div>
+  <div class="footer-links">
+    <a href="https://github.com/kamssun/shellcmp-open">GitHub</a>
+    <a href="docs/index.html">文档首页</a>
+    <a href="docs/pages/state-restore.html">状态回溯</a>
+    <a href="docs/pages/obo-dispatcher.html">OBO 调度器</a>
+    <a href="docs/pages/perf-monitor.html">性能监控</a>
+    <a href="docs/pages/auto-tracking.html">全自动埋点</a>
+    <a href="docs/pages/vf-validation.html">VF 验证</a>
+    <a href="docs/pages/ksp-codegen.html">KSP</a>
+    <a href="docs/pages/custom-ui.html">自定义 UI</a>
+    <a href="docs/pages/ai-spec.html">AI 规范</a>
+    <a href="docs/pages/testing.html">测试</a>
+    <a href="docs/pages/cross-platform.html">跨端对比</a>
+    <a href="https://github.com/kamssun/shellcmp-open/blob/main/README_en.md">English</a>
+  </div>
+</footer>
+
+<!-- TWEAKS PANEL -->
+<div id="tweaks-panel">
+  <h3>Tweaks</h3>
+
+  <div class="tweak-row">
+    <div class="tweak-label">主题色调</div>
+    <div class="tweak-options">
+      <button class="tweak-btn active" onclick="setAccent('green', this)">绿色</button>
+      <button class="tweak-btn" onclick="setAccent('blue', this)">蓝色</button>
+      <button class="tweak-btn" onclick="setAccent('purple', this)">紫色</button>
+    </div>
+  </div>
+
+  <div class="tweak-row">
+    <div class="tweak-label">背景亮度</div>
+    <input type="range" min="1" max="5" step="1" value="2" oninput="setBrightness(this.value)">
+  </div>
+
+  <div class="tweak-row">
+    <div class="tweak-label">语言</div>
+    <div class="tweak-options">
+      <button class="tweak-btn active" onclick="setLang('zh', this)">中文</button>
+      <button class="tweak-btn" onclick="setLang('en', this)">English</button>
+    </div>
+  </div>
+
+  <div class="tweak-row">
+    <div class="tweak-label">密度</div>
+    <div class="tweak-options">
+      <button class="tweak-btn" onclick="setDensity('compact', this)">紧凑</button>
+      <button class="tweak-btn active" onclick="setDensity('normal', this)">标准</button>
+      <button class="tweak-btn" onclick="setDensity('loose', this)">宽松</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// TWEAKS
+window.addEventListener('message', e => {
+  if (e.data?.type === '__activate_edit_mode') document.getElementById('tweaks-panel').style.display = 'block';
+  if (e.data?.type === '__deactivate_edit_mode') document.getElementById('tweaks-panel').style.display = 'none';
+});
+window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accent": "green",
+  "brightness": 2,
+  "lang": "zh",
+  "density": "normal"
+}/*EDITMODE-END*/;
+
+function setAccent(color, btn) {
+  const map = {
+    green: { main: 'oklch(0.76 0.18 155)', dim: 'oklch(0.76 0.18 155 / 0.15)' },
+    blue:  { main: 'oklch(0.68 0.17 248)', dim: 'oklch(0.68 0.17 248 / 0.15)' },
+    purple:{ main: 'oklch(0.70 0.17 295)', dim: 'oklch(0.70 0.17 295 / 0.15)' },
+  };
+  const c = map[color];
+  document.documentElement.style.setProperty('--green', c.main);
+  document.documentElement.style.setProperty('--green-dim', c.dim);
+  document.querySelectorAll('.tweak-options .tweak-btn').forEach(b => {
+    if (b.closest('.tweak-row') === btn.closest('.tweak-row')) b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { accent: color } }, '*');
+}
+
+function setBrightness(v) {
+  const l = 0.08 + (v - 1) * 0.015;
+  document.documentElement.style.setProperty('--bg', `oklch(${l.toFixed(3)} 0.012 240)`);
+  document.documentElement.style.setProperty('--bg2', `oklch(${(l+0.04).toFixed(3)} 0.012 240)`);
+  document.documentElement.style.setProperty('--bg3', `oklch(${(l+0.08).toFixed(3)} 0.014 240)`);
+  window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { brightness: +v } }, '*');
+}
+
+const enStrings = {
+  '.hero-eyebrow': 'KMP Cross-Platform Architecture',
+  'h1': 'One Codebase<br><span>Three Platforms</span>',
+};
+function setLang(lang, btn) {
+  document.querySelectorAll('.tweak-options .tweak-btn').forEach(b => {
+    if (b.closest('.tweak-row') === btn.closest('.tweak-row')) b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { lang } }, '*');
+}
+
+function setDensity(d, btn) {
+  const scale = { compact: '0.88', normal: '1', loose: '1.12' };
+  document.body.style.fontSize = (15 * parseFloat(scale[d])) + 'px';
+  document.querySelectorAll('.tweak-options .tweak-btn').forEach(b => {
+    if (b.closest('.tweak-row') === btn.closest('.tweak-row')) b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { density: d } }, '*');
+}
+
+// Apply defaults
+(function() {
+  const d = TWEAK_DEFAULTS;
+  if (d.accent !== 'green') {
+    const btn = [...document.querySelectorAll('.tweak-btn')].find(b => b.textContent === (d.accent === 'blue' ? '蓝色' : '紫色'));
+    if (btn) setAccent(d.accent, btn);
+  }
+  if (d.brightness !== 2) setBrightness(d.brightness);
+})();
+
+// Intersection observer for section highlights
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.opacity = '1';
+      e.target.style.transform = 'none';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.feature-card, .build-card, .tier, .stack-item').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(12px)';
+  el.style.transition = 'opacity 0.4s ease, transform 0.4s ease, border-color 0.2s, background 0.2s';
+  observer.observe(el);
+});
+</script>
+</body>
+</html>

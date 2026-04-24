@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OBO 调度器 — ArchShowcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<style>:root { --accent: var(--orange); --accent-dim: var(--orange-dim); }</style>
+</head>
+<body>
+
+<nav class="doc-nav">
+  <a href="../../index.html" class="doc-nav-back">← ArchShowcase</a>
+  <span class="doc-nav-sep">/</span>
+  <span class="doc-nav-title">OBO 调度器</span>
+  <span class="doc-nav-badge">docs/OBO_HANDLER_INTERCEPT.md</span>
+</nav>
+
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <div class="sidebar-label">本页目录</div>
+    <div class="sidebar-links">
+      <a href="#problem" class="active">问题背景</a>
+      <a href="#solution">解决方案</a>
+      <a href="#intercept">Handler 拦截</a>
+      <a href="#blacklist">黑名单</a>
+      <a href="#diagnostics">运行时诊断</a>
+      <a href="#switches">全局开关</a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">其他文档</div>
+    <div class="sidebar-links">
+      <a href="../pages/state-restore.html" class="other">交互回溯</a>
+      <a href="../pages/perf-monitor.html" class="other">性能监控</a>
+      <a href="../pages/auto-tracking.html" class="other">全自动埋点</a>
+      <a href="../pages/vf-validation.html" class="other">VF 全自动验证</a>
+      <a href="../pages/ai-spec.html" class="other">AI 规范体系</a>
+      <a href="../pages/testing.html" class="other">测试体系</a>
+    </div>
+  </aside>
+
+  <main class="doc-content">
+    <div class="doc-hero">
+      <div class="doc-eyebrow">OBO 调度器</div>
+      <h1>队列永远只有<br><span>一个任务</span></h1>
+      <p>解决消息积压导致的卡顿，同时让每个任务成为独立消息，让性能监控能精准定位"就是这个 SDK 慢了 51ms"。</p>
+      <div class="badge-row">
+        <span class="badge badge-orange">消息积压消除</span>
+        <span class="badge badge-green">三方 SDK 拦截</span>
+        <span class="badge badge-blue">来源级诊断</span>
+        <span class="badge badge-purple">ASM 字节码改写</span>
+      </div>
+    </div>
+
+    <!-- PROBLEM -->
+    <div class="doc-section" id="problem">
+      <h2>问题背景</h2>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-title">问题一：消息积压 → 卡顿</div>
+          <div class="card-desc">大量异步任务同时提交到主线程队列，队列瞬间堆满。Android 屏障消息无法打断已积压的任务，渲染帧被阻塞在队列后方，掉帧不可避免。</div>
+        </div>
+        <div class="card">
+          <div class="card-title">问题二：卡顿了但不知道谁慢</div>
+          <div class="card-desc">几十个任务挤在一起执行，性能监控只能看到"这一批加起来耗时 200ms"，无法区分具体是哪个任务、哪个 SDK 造成的。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SOLUTION -->
+    <div class="doc-section" id="solution">
+      <h2>解决方案</h2>
+      <p>OBO（One By One）的核心原则：<strong>队列里永远最多只有一个任务</strong>。当前任务执行完后才提交下一个。</p>
+
+      <div class="callout callout-green">
+        <strong>效果</strong>
+        <p>VSYNC 到达时队列几乎是空的，屏障机制正常生效，渲染帧顺畅执行。同样工作量（30 个列表项 × 10 个任务 × 3ms），原生并发会卡死，OBO 逐个执行保持丝滑滚动。</p>
+      </div>
+
+      <div class="callout callout-orange">
+        <strong>取舍</strong>
+        <p>OBO 让整批任务的总完成时间变长，但用户不会感知后台任务"2 秒 vs 1 秒完成"，却一定会感知"滑动时卡了 1 秒"。流畅优先于速度，这是正确的取舍。</p>
+      </div>
+
+      <h3>内置对比界面</h3>
+      <p>压测页面带实时帧率指示器 + 可调参数，一键切换 OBO / 原生模式，效果差异肉眼可见，可直观验证。</p>
+    </div>
+
+    <!-- INTERCEPT -->
+    <div class="doc-section" id="intercept">
+      <h2>Handler 拦截</h2>
+      <p>OBO 只能管住项目自身代码。三方 SDK（IM / 支付 / 归因等）直接调 <code>Handler.post/send</code> 往主线程塞消息，绕过 OBO 照样造成积压。</p>
+      <p>解决方案：<strong>编译期 ASM 字节码改写</strong>，将三方 SDK 的 Handler 调用自动收束到 OBO，无需 SDK 配合。</p>
+
+      <div class="flow"><span class="comment">编译期：</span>
+  INVOKEVIRTUAL Handler.post(Runnable)
+  → LDC "com.thirdparty.SomeClass"     <span class="comment">← 编译期注入调用方类名</span>
+  → INVOKESTATIC OBOCompat.post(Handler, Runnable, String)
+
+<span class="comment">运行时：</span>
+  立即消息 → OBOScheduler.post(tag) { r.run() }
+  延时消息 → handler.postDelayed({ OBOScheduler.post(tag) { r.run() } }, delay)
+  定时消息 → handler.postAtTime({ OBOScheduler.post(tag) { r.run() } }, time)
+  队首消息 → OBOScheduler.postFirst(tag) { r.run() }</div>
+
+      <p>核心原则：<strong>定时交给系统 MessageQueue，执行交给 OBO。</strong></p>
+
+      <h3>拦截的 13 个 Handler 方法</h3>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>类别</th><th>方法</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">立即</td><td><code>post</code>, <code>sendMessage</code>, <code>sendEmptyMessage</code></td></tr>
+            <tr><td class="desc">延时</td><td><code>postDelayed</code>(×2), <code>sendMessageDelayed</code>, <code>sendEmptyMessageDelayed</code></td></tr>
+            <tr><td class="desc">定时</td><td><code>postAtTime</code>(×2), <code>sendMessageAtTime</code>, <code>sendEmptyMessageAtTime</code></td></tr>
+            <tr><td class="desc">队首</td><td><code>postAtFrontOfQueue</code>, <code>sendMessageAtFrontOfQueue</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>拦截报告</h3>
+      <p>独立 Gradle task，只读扫描 runtime classpath JAR，支持增量缓存。报告路径：</p>
+      <pre>androidApp/build/reports/obo-handler/{variant}-intercept.txt
+<span class="comment">格式：类名 | 方法() → Handler.xxx ×次数</span></pre>
+    </div>
+
+    <!-- BLACKLIST -->
+    <div class="doc-section" id="blacklist">
+      <h2>黑名单（不拦截）</h2>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>前缀</th><th>原因</th></tr></thead>
+          <tbody>
+            <tr><td><code>com.example.archshowcase.</code></td><td class="desc">项目自身代码，用 Handler 有特殊原因</td></tr>
+            <tr><td><code>androidx.</code></td><td class="desc">框架基础设施（Compose 渲染管线、生命周期、动画）</td></tr>
+            <tr><td><code>android.</code></td><td class="desc">系统框架</td></tr>
+            <tr><td><code>kotlinx.coroutines.</code></td><td class="desc">协程调度器（Dispatchers.Main），拦截会双重 OBO</td></tr>
+            <tr><td><code>com.arkivanov.</code></td><td class="desc">Decompose / MVIKotlin 架构组件</td></tr>
+            <tr><td><code>leakcanary.</code> / <code>curtains.</code></td><td class="desc">Debug 工具</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout callout-blue">
+        <strong>新增三方 SDK</strong>
+        <p>默认会被拦截。如需排除，在 <code>OBOHandlerConstants.SKIP_PREFIXES</code> 添加包前缀即可。</p>
+      </div>
+    </div>
+
+    <!-- DIAGNOSTICS -->
+    <div class="doc-section" id="diagnostics">
+      <h2>运行时诊断</h2>
+      <p>开启 <code>AppConfig.enableOBODiagnostics = true</code> 后，追踪每个任务的执行耗时和来源。</p>
+
+      <h3>[OBO:SLOW] 慢任务</h3>
+      <p>单个任务执行超过半帧（阈值跟设备刷新率挂钩）：</p>
+      <div class="log-block">
+        <span class="log-tag">[OBO:SLOW]</span> <span class="log-green">com.thirdparty.im.sdk.IMClient</span> <span class="log-blue">12.3ms</span> <span class="log-dim">(threshold=8.3ms)</span>
+      </div>
+
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>刷新率</th><th>阈值</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">60Hz</td><td><code>8.3ms</code></td></tr>
+            <tr><td class="desc">90Hz</td><td><code>5.6ms</code></td></tr>
+            <tr><td class="desc">120Hz</td><td><code>4.2ms</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>[OBO:FLOOD] 高频灌入</h3>
+      <p>1s 窗口内某来源累计执行超过 100ms（帧预算的 10%），冷却期 5s：</p>
+      <div class="log-block">
+        <span class="log-tag">[OBO:FLOOD]</span> <span class="log-green">com.thirdparty.im.push.f</span> <span class="log-blue">185.0ms/1000ms</span> <span class="log-dim">(threshold=100.0ms, count=92, cooldown=5s)</span>
+      </div>
+
+      <h3>JANK 日志中的 OBO 来源</h3>
+      <p>逐条慢消息（&gt;3ms 的 OBO 任务独立成行）：</p>
+      <div class="log-block">
+        <span class="log-tag">[PERF:JANK]</span> SEVERE 108ms (11 dropped) route=ImageDemo #912 (+19)<br>
+        &nbsp;&nbsp;├─ Choreographer.doFrame 107ms<br>
+        &nbsp;&nbsp;├─ <span class="log-green">OBOScheduler LoginStore 3ms</span><br>
+        &nbsp;&nbsp;├─ <span class="log-green">OBOScheduler com.thirdparty.push.f 3ms</span><br>
+        &nbsp;&nbsp;├─ <span class="log-green">OBOScheduler com.thirdparty.im.sdk.IMClient 51ms</span><br>
+        &nbsp;&nbsp;└─ cpu: 100ms/108ms (92%)
+      </div>
+
+      <h3>来源标识（tag）注入方式</h3>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>来源</th><th>tag 值</th><th>注入方式</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">ASM 拦截的三方 SDK</td><td><code>com.thirdparty.im.sdk.IMClient</code></td><td class="desc">编译期 LDC 常量</td></tr>
+            <tr><td class="desc">oboLaunch 协程</td><td><code>"LoginStore"</code></td><td class="desc">CoroutineName</td></tr>
+            <tr><td class="desc">OBOLaunchedEffect</td><td><code>debugTag 或 "effect"</code></td><td class="desc">CoroutineName</td></tr>
+            <tr><td class="desc">直接 OBOScheduler.post</td><td><code>"Application"</code></td><td class="desc">直接传参</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SWITCHES -->
+    <div class="doc-section" id="switches">
+      <h2>全局开关</h2>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>开关</th><th>作用</th></tr></thead>
+          <tbody>
+            <tr><td><code>AppConfig.useOBOScheduler = false</code></td><td class="desc">关闭 OBO 调度，OBOCompat 透传原始 Handler 调用</td></tr>
+            <tr><td><code>AppConfig.enableOBODiagnostics = true</code></td><td class="desc">开启来源级诊断日志（每任务 2× nanoTime + HashMap 操作额外开销）</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-green">
+        <strong>安全保障</strong>
+        <p><code>com.example.archshowcase.core.scheduler.*</code> 包内所有类（含 OBOCompat）被排除改写，避免递归。非主线程 Handler 直接透传，延时/定时消息的时序语义完整保留。</p>
+      </div>
+    </div>
+
+    <div class="doc-footer-nav">
+      <a href="../pages/state-restore.html">← 交互回溯</a>
+      <a href="../pages/perf-monitor.html" class="next"><span class="label">下一篇</span>性能监控 →</a>
+    </div>
+  </main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('.doc-section');
+const links = document.querySelectorAll('.sidebar-links a:not(.other)');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.sidebar-links a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

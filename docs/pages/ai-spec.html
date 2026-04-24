@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 规范体系 — ArchShowcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<style>:root { --accent: var(--purple); --accent-dim: var(--purple-dim); }</style>
+</head>
+<body>
+
+<nav class="doc-nav">
+  <a href="../../index.html" class="doc-nav-back">← ArchShowcase</a>
+  <span class="doc-nav-sep">/</span>
+  <span class="doc-nav-title">AI 规范体系</span>
+  <span class="doc-nav-badge">AGENTS.md</span>
+</nav>
+
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <div class="sidebar-label">本页目录</div>
+    <div class="sidebar-links">
+      <a href="#mental" class="active">架构心智模型</a>
+      <a href="#rules">规范分层</a>
+      <a href="#general">通用规则</a>
+      <a href="#domain">领域规则</a>
+      <a href="#openspec">OpenSpec 流程</a>
+      <a href="#doc-principle">文档维护原则</a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">其他文档</div>
+    <div class="sidebar-links">
+      <a href="../pages/state-restore.html" class="other">交互回溯</a>
+      <a href="../pages/obo-dispatcher.html" class="other">OBO 调度器</a>
+      <a href="../pages/perf-monitor.html" class="other">性能监控</a>
+      <a href="../pages/auto-tracking.html" class="other">全自动埋点</a>
+      <a href="../pages/vf-validation.html" class="other">VF 全自动验证</a>
+      <a href="../pages/testing.html" class="other">测试体系</a>
+    </div>
+  </aside>
+
+  <main class="doc-content">
+    <div class="doc-hero">
+      <div class="doc-eyebrow">AI 规范体系</div>
+      <h1>新人也写不出<br><span>烂代码</span></h1>
+      <p>34 条禁止项 + 分层规则体系，由 AI 在编码过程中实时约束。不是写完再 review，而是写的时候就不让犯错。规范不靠人记，靠系统保证。</p>
+      <div class="badge-row">
+        <span class="badge badge-purple">34 条禁止项</span>
+        <span class="badge badge-blue">渐进式加载</span>
+        <span class="badge badge-orange">OpenSpec</span>
+        <span class="badge badge-green">提交前自动检查</span>
+      </div>
+    </div>
+
+    <!-- MENTAL -->
+    <div class="doc-section" id="mental">
+      <h2>架构心智模型</h2>
+
+      <!-- Platform row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;text-align:center;font-size:13px;font-weight:600;">androidApp</div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;text-align:center;font-size:13px;font-weight:600;">iosApp</div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;text-align:center;font-size:13px;font-weight:600;">desktopApp</div>
+      </div>
+      <div style="text-align:center;color:var(--text3);font-size:16px;line-height:1;margin:2px 0 6px;">↓</div>
+
+      <!-- a-shared -->
+      <div style="background:oklch(0.76 0.18 155 / 0.06);border:1px solid oklch(0.76 0.18 155 / 0.3);border-radius:10px;padding:14px 18px;margin-bottom:6px;">
+        <div style="color:var(--green);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;margin-bottom:8px;letter-spacing:0.06em;">a-shared · 共享 UI + 业务（99% commonMain）</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <span style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:3px 10px;font-size:12px;color:var(--text2);">presentation/ · Component + Content + Store（MVI）</span>
+          <span style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:3px 10px;font-size:12px;color:var(--text2);">di/ · Koin 模块组装</span>
+          <span style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:3px 10px;font-size:12px;color:var(--text2);">i18n/ · StringProvider + tr()</span>
+        </div>
+      </div>
+
+      <!-- a-platform -->
+      <div style="background:oklch(0.68 0.17 248 / 0.06);border:1px solid oklch(0.68 0.17 248 / 0.25);border-radius:10px;padding:14px 18px;margin-bottom:6px;">
+        <div style="color:var(--blue);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;margin-bottom:8px;letter-spacing:0.06em;">a-platform · SDK 桥接（expect / actual）</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <span style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:3px 10px;font-size:12px;color:var(--text2);">Auth · Pay · IM · RTC · Attribution · DeviceToken</span>
+          <span style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:3px 10px;font-size:12px;color:var(--text2);">network/ · Api / Repository / DTO / NetworkRecorder</span>
+        </div>
+      </div>
+
+      <!-- a-core -->
+      <div style="background:oklch(0.70 0.17 295 / 0.06);border:1px solid oklch(0.70 0.17 295 / 0.25);border-radius:10px;padding:14px 18px;margin-bottom:6px;">
+        <div style="color:var(--purple);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;margin-bottom:8px;letter-spacing:0.06em;">a-core · 基础设施</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <span style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:3px 10px;font-size:12px;color:var(--text2);">di/ · DI 模块</span>
+          <span style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:3px 10px;font-size:12px;color:var(--text2);">scheduler/ · OBO + Handler 拦截 + 诊断</span>
+          <span style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:3px 10px;font-size:12px;color:var(--text2);">perf/ · 启动时间线 / 卡顿 / 帧统计 / FrameMetrics</span>
+          <span style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:3px 10px;font-size:12px;color:var(--text2);">trace/ · 状态回溯 / 导出 / 泄漏审计 / 滚动恢复 / SSIM</span>
+        </div>
+      </div>
+
+      <!-- bottom row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:2px;">
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;">
+          <div style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--orange);font-weight:700;margin-bottom:4px;">build-plugin</div>
+          <div style="font-size:12px;color:var(--text3);">ASM 字节码改写三方 SDK Handler</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;">
+          <div style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--orange);font-weight:700;margin-bottom:4px;">macrobenchmark</div>
+          <div style="font-size:12px;color:var(--text3);">Baseline Profile + 启动基准测试</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;">
+          <div style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--orange);font-weight:700;margin-bottom:4px;">tools/verify</div>
+          <div style="font-size:12px;color:var(--text3);">VF AI 全自动截图回归</div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--text2);">
+        <span>数据流：<code>Intent → Executor → Msg → Reducer → State</code>（MVIKotlin）</span>
+        <span>导航：Decompose ChildStack · KSP 自动生成路由序列化</span>
+      </div>
+    </div>
+
+    <!-- RULES -->
+    <div class="doc-section" id="rules">
+      <h2>规范分层</h2>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>层</th><th>载体</th><th>加载时机</th><th>内容要求</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">L0</td><td><code>CLAUDE.md</code></td><td class="desc">每次对话自动加载</td><td class="desc">架构心智模型 + 规范索引，不超过 200 行</td></tr>
+            <tr><td class="desc">L1</td><td class="desc">通用 instincts</td><td class="desc">每次写代码前</td><td class="desc">所有改动都必须遵守的规则</td></tr>
+            <tr><td class="desc">L2</td><td class="desc">领域 instincts</td><td class="desc">碰到相关代码时</td><td class="desc">特定领域的规则，按 trigger 字段匹配</td></tr>
+            <tr><td class="desc">L3</td><td><code>docs/</code></td><td class="desc">需要理解全貌时</td><td class="desc">架构图谱、深度设计文档</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- GENERAL -->
+    <div class="doc-section" id="general">
+      <h2>通用规则 — 每次改动必读</h2>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>文件</th><th>职责</th></tr></thead>
+          <tbody>
+            <tr><td><code>forbidden.yaml</code></td><td class="desc">全局禁止事项（34 条）</td></tr>
+            <tr><td><code>mvi.yaml</code></td><td class="desc">MVI 状态管理（Reducer 纯函数）</td></tr>
+            <tr><td><code>component.yaml</code></td><td class="desc">Decompose Component 规范</td></tr>
+            <tr><td><code>commit-convention.yaml</code></td><td class="desc">提交消息格式 + pre-commit 验证流程</td></tr>
+            <tr><td><code>code-review.yaml</code></td><td class="desc">合规审查：架构 / 性能 / UI / DI / 通用检查项</td></tr>
+            <tr><td><code>debugging.yaml</code></td><td class="desc">调试纪律：日志先行 + logcat 分析方法，遇运行时问题必读</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-purple">
+        <strong>禁止项自动拦截</strong>
+        <p>不允许出现的代码模式（如主线程网络请求、硬编码密钥、内存泄漏写法）在编写时直接被阻止，而非事后 review 才发现。</p>
+      </div>
+    </div>
+
+    <!-- DOMAIN -->
+    <div class="doc-section" id="domain">
+      <h2>领域规则 — 按需自动加载</h2>
+      <p>改 UI 时自动加载 UI 规范，改网络时自动加载网络规范，开发者不需要记住所有规则。</p>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>触发场景</th><th>加载文件</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">写 UI / Compose</td><td><code>ui-compose.yaml</code> + <code>i18n.yaml</code></td></tr>
+            <tr><td class="desc">改 App* 自定义组件</td><td><code>custom-components.yaml</code></td></tr>
+            <tr><td class="desc">改 DI / Koin</td><td><code>koin-di.yaml</code></td></tr>
+            <tr><td class="desc">改路由</td><td><code>route.yaml</code></td></tr>
+            <tr><td class="desc">改列表 / 性能 / Baseline Profile</td><td><code>performance.yaml</code></td></tr>
+            <tr><td class="desc">写测试</td><td><code>testing.yaml</code></td></tr>
+            <tr><td class="desc">改状态回溯</td><td><code>time-travel.yaml</code></td></tr>
+            <tr><td class="desc">重构 / 代码风格</td><td><code>code-patterns.yaml</code></td></tr>
+            <tr><td class="desc">改网络拦截器</td><td><code>network-interceptor.yaml</code></td></tr>
+            <tr><td class="desc">分析 SDK</td><td><code>sdk-source-analysis.yaml</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>常用命令</h3>
+      <pre><span class="comment"># 快速单测（无需设备）</span>
+./gradlew :a-shared:desktopTest
+
+<span class="comment"># 覆盖率验证（≥80%）</span>
+./gradlew koverVerify
+
+<span class="comment"># 构建 Android</span>
+./gradlew :androidApp:assembleDebug
+
+<span class="comment"># Preview 截图对比（JVM，无需设备）</span>
+./gradlew :androidApp:verifyRoborazziDebug
+
+<span class="comment"># VF 端到端截图回归（真机，全量）</span>
+tools/verify/verify-vf.sh</pre>
+    </div>
+
+    <!-- OPENSPEC -->
+    <div class="doc-section" id="openspec">
+      <h2>OpenSpec — AI 驱动的复杂需求开发</h2>
+      <p>跨模块大型需求通过 OpenSpec 结构化流程，设计意图不会在编码过程中走样。</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <h4>AI 生成提案</h4>
+            <p>描述需求目标，AI 自动分析影响范围，生成技术方案提案。</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <h4>技术设计</h4>
+            <p>详细设计模块接口、数据流、关键决策点，可人工审核修改。</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-body">
+            <h4>任务拆解</h4>
+            <p>将技术设计拆解为可独立执行的子任务，明确依赖关系和验收标准。</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">04</div>
+          <div class="step-body">
+            <h4>按 spec 逐步实现</h4>
+            <p>每一步实现都参照 spec，保证最终代码与设计意图一致。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-blue">
+        <strong>已落地 7 个复杂需求</strong>
+        <p>设计系统、性能监控、开发书签、iOS 回溯、VF 录制等均通过 OpenSpec 流程完成，复杂度和质量均可控。</p>
+      </div>
+    </div>
+
+    <!-- DOC PRINCIPLE -->
+    <div class="doc-section" id="doc-principle">
+      <h2>文档维护原则</h2>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-title">极简</div>
+          <div class="card-desc">能用一句话说清的不用两句。禁止冗余描述、重复信息、装饰性文字。选对形式：单条规则用一句话，多项映射用表格，索引优于全文。</div>
+        </div>
+        <div class="card">
+          <div class="card-title">渐进式披露</div>
+          <div class="card-desc">信息按需分层，避免一次性灌入。L0 只放索引和心智模型，细节下沉到 L1-L3，每层聚焦单一领域。</div>
+        </div>
+        <div class="card">
+          <div class="card-title">提炼标准</div>
+          <div class="card-desc">MEMORY.md 是草稿本，经多次会话验证、不再变化的模式或踩坑记录，提炼到 yaml/docs 后从草稿移除。</div>
+        </div>
+        <div class="card">
+          <div class="card-title">新增规范流程</div>
+          <div class="card-desc">新增规范先确定层级（L0-L3），再选择放置位置。L1/L2 每个文件聚焦单一领域，不交叉引用。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="doc-footer-nav">
+      <a href="../pages/vf-validation.html">← VF 全自动验证</a>
+      <a href="../pages/testing.html" class="next"><span class="label">下一篇</span>测试体系 →</a>
+    </div>
+  </main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('.doc-section');
+const links = document.querySelectorAll('.sidebar-links a:not(.other)');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.sidebar-links a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

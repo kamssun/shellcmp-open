@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>自定义 UI + 极少重组 — ArchShowcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<style>:root { --accent: var(--orange); --accent-dim: var(--orange-dim); }</style>
+</head>
+<body>
+
+<nav class="doc-nav">
+  <a href="../../index.html" class="doc-nav-back">← ArchShowcase</a>
+  <span class="doc-nav-sep">/</span>
+  <span class="doc-nav-title">自定义 UI + 极少重组</span>
+  <span class="doc-nav-badge">a-shared / presentation</span>
+</nav>
+
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <div class="sidebar-label">本页目录</div>
+    <div class="sidebar-links">
+      <a href="#why" class="active">为什么去 Material3</a>
+      <a href="#skip">智能跳过</a>
+      <a href="#defer">延迟读取</a>
+      <a href="#cache">计算缓存</a>
+      <a href="#list">列表优化</a>
+      <a href="#verify">如何验证</a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">其他文档</div>
+    <div class="sidebar-links">
+      <a href="../pages/state-restore.html" class="other">交互回溯</a>
+      <a href="../pages/obo-dispatcher.html" class="other">OBO 调度器</a>
+      <a href="../pages/perf-monitor.html" class="other">性能监控</a>
+      <a href="../pages/ksp-codegen.html" class="other">KSP 代码生成</a>
+      <a href="../pages/vf-validation.html" class="other">VF 全自动验证</a>
+      <a href="../pages/ai-spec.html" class="other">AI 规范体系</a>
+    </div>
+  </aside>
+
+  <main class="doc-content">
+    <div class="doc-hero">
+      <div class="doc-eyebrow">自定义 UI</div>
+      <h1>只有数据变化<br><span>才刷新</span></h1>
+      <p>移除 Google 官方 Material3 组件库，自建轻量组件体系。智能跳过、延迟读取、计算缓存三策略联动，让只有数据真正变化的组件才重组，其余全部跳过。</p>
+      <div class="badge-row">
+        <span class="badge badge-orange">去 Material3</span>
+        <span class="badge badge-green">智能跳过</span>
+        <span class="badge badge-blue">延迟读取</span>
+        <span class="badge badge-purple">计算缓存</span>
+      </div>
+    </div>
+
+    <!-- WHY -->
+    <div class="doc-section" id="why">
+      <h2>为什么去 Material3</h2>
+      <p>Google 官方 Material3 组件在易用性上做了很多封装，但这些封装隐含了额外的重组开销：</p>
+
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-title">隐含状态订阅</div>
+          <div class="card-desc">官方组件内部订阅了多个 CompositionLocal（主题、颜色、形状），任何主题变化都会触发所有组件重组，即使视觉没有变化。</div>
+        </div>
+        <div class="card">
+          <div class="card-title">过度封装</div>
+          <div class="card-desc">Button / Text / Card 等组件包裹了多层 Composable，每层都增加重组检查的开销。轻量自研组件直接去掉不必要的层级。</div>
+        </div>
+        <div class="card">
+          <div class="card-title">稳定性声明困难</div>
+          <div class="card-desc">官方组件参数中有大量未标 @Stable 的类型，导致编译器无法推断"参数没变就跳过重组"，只能保守地每次都执行。</div>
+        </div>
+        <div class="card">
+          <div class="card-title">自研可控</div>
+          <div class="card-desc">自研组件完全掌控稳定性声明，精确标注哪些参数可以触发跳过优化，重组范围可以精确到字段级别。</div>
+        </div>
+      </div>
+
+      <h3>自研组件覆盖范围</h3>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>类别</th><th>自研组件</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">交互</td><td><code>AppButton / AppTextButton / AppOutlinedButton / AppIconButton</code></td></tr>
+            <tr><td class="desc">选择</td><td><code>AppSwitch / AppFilterChip</code></td></tr>
+            <tr><td class="desc">文字</td><td><code>AppText</code>（稳定性声明 + 精简参数）</td></tr>
+            <tr><td class="desc">导航</td><td><code>AppBottomNav / AppTopBar</code></td></tr>
+            <tr><td class="desc">列表</td><td><code>ExposureLazyColumn</code>（含自动曝光追踪）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SKIP -->
+    <div class="doc-section" id="skip">
+      <h2>智能跳过（Smart Skipping）</h2>
+      <p>Compose 编译器会在每个 @Composable 函数入口生成跳过检查：如果所有参数与上次相同，直接跳过整个函数体，不执行任何代码。</p>
+
+      <div class="callout callout-orange">
+        <strong>前提：参数必须是 Stable 类型</strong>
+        <p>只有当所有参数都被标记为 @Stable 或编译器能推断为稳定，跳过优化才会生效。不稳定类型会让编译器保守地每次都执行。</p>
+      </div>
+
+      <h3>稳定性声明方式</h3>
+      <pre><span class="comment">// 方式一：@Stable 标注（适用于接口 / 抽象类）</span>
+<span class="ann">@Stable</span>
+<span class="kw">interface</span> ImageItem {
+    <span class="kw">val</span> id: String
+    <span class="kw">val</span> url: String
+}
+
+<span class="comment">// 方式二：@Immutable 标注（适用于不可变数据）</span>
+<span class="ann">@Immutable</span>
+<span class="kw">data class</span> ImageCard(<span class="kw">val</span> id: String, <span class="kw">val</span> url: String)
+
+<span class="comment">// 方式三：Stability Config（全局声明第三方类型为稳定）</span>
+<span class="comment">// compose_compiler_config.conf：</span>
+<span class="comment">// com.example.SomeThirdPartyClass</span></pre>
+    </div>
+
+    <!-- DEFER -->
+    <div class="doc-section" id="defer">
+      <h2>延迟读取（Deferred Reading）</h2>
+      <p>高频变化的值（动画进度、滚动偏移）如果在父组件读取，会导致父组件频繁重组，连带子树全部重组。延迟读取把这类值的读取推迟到最后一刻，只在绘制阶段读取，跳过重组阶段。</p>
+
+      <pre><span class="comment">// ❌ 错误：在父组件读取动画值，父组件每帧都重组</span>
+<span class="ann">@Composable</span>
+<span class="kw">fun</span> ParentCard(animProgress: Float) {
+    Box(Modifier.alpha(animProgress)) { <span class="comment">/* 子树每帧都重组 */</span> }
+}
+
+<span class="comment">// ✅ 正确：传入 lambda，延迟到绘制阶段读取</span>
+<span class="ann">@Composable</span>
+<span class="kw">fun</span> ParentCard(animProgress: () -> Float) {
+    Box(Modifier.graphicsLayer { alpha = animProgress() }) {
+        <span class="comment">/* 子树不重组，只有 graphicsLayer 更新 */</span>
+    }
+}</pre>
+
+      <div class="callout callout-green">
+        <strong>适用场景</strong>
+        <p>动画进度、滚动偏移、实时数据（帧率计数器等）。这类值每帧都变，不适合触发重组，应通过 graphicsLayer / drawWithContent 在绘制阶段消费。</p>
+      </div>
+    </div>
+
+    <!-- CACHE -->
+    <div class="doc-section" id="cache">
+      <h2>计算缓存（remember + derivedStateOf）</h2>
+      <p>排序、过滤、格式化等计算如果每次重组都执行，在长列表场景下会造成明显卡顿。用 <code>remember</code> 和 <code>derivedStateOf</code> 缓存结果，数据不变不重复计算。</p>
+
+      <pre><span class="comment">// ❌ 错误：每次重组都重新排序</span>
+<span class="kw">val</span> sorted = items.sortedBy { it.timestamp }
+
+<span class="comment">// ✅ 正确：只有 items 变化时才重新排序</span>
+<span class="kw">val</span> sorted = remember(items) {
+    items.sortedBy { it.timestamp }
+}
+
+<span class="comment">// ✅ 更好：derivedStateOf 细粒度订阅</span>
+<span class="kw">val</span> unreadCount by remember {
+    derivedStateOf { messages.count { !it.isRead } }
+}
+<span class="comment">// unreadCount 只在 messages 中未读数量变化时才更新</span></pre>
+
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>场景</th><th>推荐方式</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">排序 / 过滤（输入是整个列表）</td><td><code>remember(key) { ... }</code></td></tr>
+            <tr><td class="desc">派生计数 / 判断（输入是 State）</td><td><code>derivedStateOf { ... }</code></td></tr>
+            <tr><td class="desc">格式化字符串（输入是数据字段）</td><td><code>remember(field) { format(field) }</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LIST -->
+    <div class="doc-section" id="list">
+      <h2>列表滚动优化</h2>
+      <p>长列表滚动时，视觉效果实现方式对重组频率影响巨大。</p>
+
+      <pre><span class="comment">// ❌ 错误：clip + shape 触发 Layout 重算</span>
+Box(
+    Modifier
+        .clip(RoundedCornerShape(12.dp))
+        .background(color)
+) { ... }
+
+<span class="comment">// ✅ 正确：graphicsLayer 绕过重组，直接在绘制层处理圆角</span>
+Box(
+    Modifier.graphicsLayer {
+        shape = RoundedCornerShape(12.dp)
+        clip = <span class="kw">true</span>
+    }
+) { ... }</pre>
+
+      <div class="callout callout-blue">
+        <strong>原理</strong>
+        <p><code>graphicsLayer</code> 的修改在 RenderThread 上应用，不触发 Compose 的 measure / layout / composition 阶段。滚动时圆角、阴影等视觉效果可以完全绕开重组。</p>
+      </div>
+    </div>
+
+    <!-- VERIFY -->
+    <div class="doc-section" id="verify">
+      <h2>如何验证重组效果</h2>
+      <p>Android Studio 提供实时工具，可以直观看到哪些组件在重组。</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <h4>打开 Running Devices + Layout Inspector</h4>
+            <p>Android Studio → View → Tool Windows → Running Devices，连接设备后打开 Layout Inspector。</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <h4>开启重组计数</h4>
+            <p>Layout Inspector 顶部 → 打开 "Show Recomposition Counts"，正在重组的组件会高亮显示，计数实时更新。</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-body">
+            <h4>滚动列表观察</h4>
+            <p>滚动列表时，只有屏幕内新出现的 item 会有重组计数，屏幕外和数据未变的 item 计数不增加，说明跳过优化生效。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-orange">
+        <strong>这不是理论推导</strong>
+        <p>可以随时打开工具验证。如果发现某个组件重组计数异常高，说明它的参数稳定性有问题，需要检查参数类型的 @Stable 标注。</p>
+      </div>
+    </div>
+
+    <div class="doc-footer-nav">
+      <a href="../pages/ksp-codegen.html">← KSP 代码生成</a>
+      <a href="../pages/cross-platform.html" class="next"><span class="label">下一篇</span>跨端方案对比 →</a>
+    </div>
+  </main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('.doc-section');
+const links = document.querySelectorAll('.sidebar-links a:not(.other)');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.sidebar-links a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全自动埋点 — ArchShowcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<style>:root { --accent: var(--green); --accent-dim: var(--green-dim); }</style>
+</head>
+<body>
+
+<nav class="doc-nav">
+  <a href="../../index.html" class="doc-nav-back">← ArchShowcase</a>
+  <span class="doc-nav-sep">/</span>
+  <span class="doc-nav-title">全自动埋点</span>
+  <span class="doc-nav-badge">docs/AUTO_TRACKING.md</span>
+</nav>
+
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <div class="sidebar-label">本页目录</div>
+    <div class="sidebar-links">
+      <a href="#arch" class="active">架构</a>
+      <a href="#intent">Intent 采集</a>
+      <a href="#exposure">曝光采集</a>
+      <a href="#ksp">KSP 自动生成</a>
+      <a href="#sanitize">脱敏规则</a>
+      <a href="#debug">Debug 验证</a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">其他文档</div>
+    <div class="sidebar-links">
+      <a href="../pages/state-restore.html" class="other">交互回溯</a>
+      <a href="../pages/obo-dispatcher.html" class="other">OBO 调度器</a>
+      <a href="../pages/perf-monitor.html" class="other">性能监控</a>
+      <a href="../pages/vf-validation.html" class="other">VF 全自动验证</a>
+      <a href="../pages/ai-spec.html" class="other">AI 规范体系</a>
+      <a href="../pages/testing.html" class="other">测试体系</a>
+    </div>
+  </aside>
+
+  <main class="doc-content">
+    <div class="doc-hero">
+      <div class="doc-eyebrow">全自动埋点</div>
+      <h1>零手写代码<br><span>四类事件全采集</span></h1>
+      <p>页面、交互、曝光、前后台四类事件全自动采集。新增带埋点列表页 = <code>ExposureLazyColumn</code> + <code>appClickable</code>，不写任何埋点代码，事件名、业务参数、脱敏全部自动完成。</p>
+      <div class="badge-row">
+        <span class="badge badge-green">KSP 自动映射</span>
+        <span class="badge badge-blue">三层脱敏</span>
+        <span class="badge badge-purple">曝光追踪</span>
+        <span class="badge badge-orange">零配置</span>
+      </div>
+    </div>
+
+    <!-- ARCH -->
+    <div class="doc-section" id="arch">
+      <h2>架构</h2>
+      <div class="flow">用户操作 → InteractionContext 标记 → Store.accept(Intent)
+                                       ↓
+                                 TrackingExecutor 拦截
+                                       ↓
+                            KSP EventMapper（类型匹配）
+                                       ↓
+                            RuntimeSanitizer 脱敏
+                                       ↓
+                            AnalyticsCollector 上报</div>
+      <p>四类事件全自动：<strong>Page</strong>（路由）、<strong>Intent</strong>（交互）、<strong>Exposure</strong>（曝光）、<strong>前后台</strong>。</p>
+    </div>
+
+    <!-- INTENT -->
+    <div class="doc-section" id="intent">
+      <h2>Intent 采集规则</h2>
+      <div class="callout callout-orange">
+        <strong>核心原则</strong>
+        <p>所有用户交互入口必须经过 <code>appClickable</code> 系列，禁止裸用 Compose 原生交互 API。</p>
+      </div>
+
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>场景</th><th>使用</th><th>替代</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">点击</td><td><code>Modifier.appClickable(component, onClick)</code></td><td class="desc"><del>.clickable</del></td></tr>
+            <tr><td class="desc">长按/双击</td><td><code>Modifier.appCombinedClickable(...)</code></td><td class="desc"><del>.combinedClickable</del></td></tr>
+            <tr><td class="desc">键盘 IME</td><td><code>appKeyboardActions(component, onSend, ...)</code></td><td class="desc"><del>KeyboardActions</del></td></tr>
+            <tr><td class="desc">开关</td><td><code>AppSwitch</code>（内置追踪）</td><td class="desc">—</td></tr>
+            <tr><td class="desc">筛选标签</td><td><code>AppFilterChip</code>（内置追踪）</td><td class="desc">—</td></tr>
+            <tr><td class="desc">按钮</td><td><code>AppButton / AppTextButton / AppIconButton</code></td><td class="desc">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>appClickable 参数</h3>
+      <pre>Modifier.appClickable(
+    component = <span class="str">"ChatInputBar"</span>,        <span class="comment">// 组件标识，用于日志</span>
+    gestureType = GestureType.TAP,     <span class="comment">// TAP / LONG_PRESS / SWITCH / CHIP / IME_ACTION</span>
+    enabled = <span class="kw">true</span>,
+    interactionSource = interactionSource, <span class="comment">// 可选，需要按压动画时传入</span>
+    role = Role.Switch,                <span class="comment">// 可选，语义化角色</span>
+    onClick = { ... },
+)</pre>
+
+      <div class="callout callout-blue">
+        <strong>不需要追踪的交互</strong>
+        <p>纯 UI 效果（滚动、拖拽、动画触发）不触发 Store Intent，不需要 <code>appClickable</code>，可以继续用原生 <code>.clickable</code>。</p>
+      </div>
+    </div>
+
+    <!-- EXPOSURE -->
+    <div class="doc-section" id="exposure">
+      <h2>Exposure 曝光采集</h2>
+      <p><code>ExposureLazyColumn</code> 自动追踪所有带 <code>key</code> + <code>contentType</code> 的 item，含 KSP 自动提取的业务参数，零手动代码。</p>
+
+      <pre>ExposureLazyColumn(
+    listId = <span class="str">"image_list"</span>,
+    state = listState,
+) {
+    items(
+        items = images,
+        key = { it.id },               <span class="comment">// 作为 exposureKey</span>
+        contentType = { <span class="str">"image_card"</span> }  <span class="comment">// 作为 componentType</span>
+    ) { image ->
+        ImageCard(image)               <span class="comment">// 无需加任何 Modifier</span>
+    }
+}</pre>
+
+      <h3>自动追踪规则</h3>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>条件</th><th>行为</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">有 key + 有 contentType</td><td class="desc">自动注入 trackExposure，exposureKey = <code>{contentType}_{key}</code>，params = KSP 提取</td></tr>
+            <tr><td class="desc">缺 key 或缺 contentType</td><td class="desc">跳过，不追踪</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>曝光触发条件</h3>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-title">可见面积 ≥ 50%</div>
+          <div class="card-desc">基于 LazyList 的 visibleItems 计算可见比例，精准判断是否真正进入视野。</div>
+        </div>
+        <div class="card">
+          <div class="card-title">停留时间 ≥ 500ms</div>
+          <div class="card-desc">避免快速滚动时误触发，只有用户真正停留查看才计为曝光。</div>
+        </div>
+        <div class="card">
+          <div class="card-title">同页去重</div>
+          <div class="card-desc">同一页面生命周期内，同 key 只上报一次，不因滚动反复触发。</div>
+        </div>
+        <div class="card">
+          <div class="card-title">业务参数自动提取</div>
+          <div class="card-desc">KSP 扫描 data class，自动生成 <code>toExposureParams()</code>，曝光时自动携带业务字段。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KSP -->
+    <div class="doc-section" id="ksp">
+      <h2>KSP 自动生成</h2>
+
+      <h3>EventMapper（Intent → TrackingEvent）</h3>
+      <ul style="color:var(--text2);line-height:2.2;padding-left:20px;font-size:14px;">
+        <li>自动扫描所有 <code>Store</code> 接口的 <code>sealed interface Intent</code></li>
+        <li>生成 <code>{StoreName}EventMapper.kt</code> + <code>EventMapperRegistry.kt</code></li>
+        <li>Registry 按 Intent 类型匹配（<code>when (intent)</code>），不依赖 storeName 字符串</li>
+        <li>命名：<code>CamelCase</code> → <code>snake_case</code>（如 <code>SendText</code> → <code>send_text</code>）</li>
+        <li>新增 Intent 零配置即可上报</li>
+      </ul>
+
+      <h3>ExposureParamsProcessor</h3>
+      <p>无注解全量扫描 <code>com.example.archshowcase.*</code> 下所有 data class，生成 <code>toExposureParams()</code> 扩展，复用 ParamsCodeGenerator 脱敏规则。</p>
+    </div>
+
+    <!-- SANITIZE -->
+    <div class="doc-section" id="sanitize">
+      <h2>脱敏规则（三层）</h2>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>层</th><th>机制</th><th>示例</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">KSP 编译期</td><td class="desc">字段名模式匹配</td><td><code>text</code> → <code>[len=N]</code>，<code>email</code> → sha256 前 8 位</td></tr>
+            <tr><td class="desc">RuntimeSanitizer</td><td class="desc">值正则检测</td><td><code>13812345678</code> → <code>138****5678</code>，<code>a@b.com</code> → <code>a***@b.com</code></td></tr>
+            <tr><td class="desc">长度截断</td><td class="desc">&gt;200 字符截断</td><td><code>aaaa...</code> → <code>aaaa...[truncated]</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>KSP 敏感字段策略</h3>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>策略</th><th>匹配字段名</th></tr></thead>
+          <tbody>
+            <tr><td class="desc">EXCLUDE（排除，不上报）</td><td class="desc">url, link, uri, token, password, secret, credential, apikey, auth, code, otp, pin, captcha...</td></tr>
+            <tr><td class="desc">LENGTH_ONLY（仅长度）</td><td class="desc">text, content, body, message</td></tr>
+            <tr><td class="desc">HASH（SHA256 前 8 位）</td><td class="desc">email, mail, phone, mobile, tel</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- DEBUG -->
+    <div class="doc-section" id="debug">
+      <h2>Debug 验证</h2>
+      <pre><span class="comment"># logcat 过滤</span>
+adb logcat -s Analytics:D
+
+<span class="comment"># 输出格式</span>
+Intent   | {route} | {storeName}.{intent_name} | {gestureType} | {params}
+Page     | {route} | {action} | from={from} | nav={nav} | {duration}ms
+Exposure | {route} | {componentType}:{exposureKey} | list={listId} | {dwell}ms | {params}</pre>
+      <div class="callout callout-green">
+        <strong>Debug 包实时输出</strong>
+        <p>Debug 包 <code>batchSize=1</code>，事件不经过批量聚合，实时输出到 logcat，方便验证每一次操作。</p>
+      </div>
+    </div>
+
+    <div class="doc-footer-nav">
+      <a href="../pages/perf-monitor.html">← 性能监控</a>
+      <a href="../pages/vf-validation.html" class="next"><span class="label">下一篇</span>VF 全自动验证 →</a>
+    </div>
+  </main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('.doc-section');
+const links = document.querySelectorAll('.sidebar-links a:not(.other)');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.sidebar-links a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

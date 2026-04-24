@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>测试体系 — ArchShowcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<style>:root { --accent: var(--green); --accent-dim: var(--green-dim); }</style>
+</head>
+<body>
+
+<nav class="doc-nav">
+  <a href="../../index.html" class="doc-nav-back">← ArchShowcase</a>
+  <span class="doc-nav-sep">/</span>
+  <span class="doc-nav-title">测试体系</span>
+  <span class="doc-nav-badge">TESTING.md</span>
+</nav>
+
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <div class="sidebar-label">本页目录</div>
+    <div class="sidebar-links">
+      <a href="#tiers" class="active">五层防线</a>
+      <a href="#unit">单元测试</a>
+      <a href="#coverage">覆盖率</a>
+      <a href="#screenshot">截图对比</a>
+      <a href="#vf">VF 验证</a>
+      <a href="#e2e">E2E 测试</a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">其他文档</div>
+    <div class="sidebar-links">
+      <a href="../pages/state-restore.html" class="other">交互回溯</a>
+      <a href="../pages/obo-dispatcher.html" class="other">OBO 调度器</a>
+      <a href="../pages/perf-monitor.html" class="other">性能监控</a>
+      <a href="../pages/auto-tracking.html" class="other">全自动埋点</a>
+      <a href="../pages/vf-validation.html" class="other">VF 全自动验证</a>
+      <a href="../pages/ai-spec.html" class="other">AI 规范体系</a>
+    </div>
+  </aside>
+
+  <main class="doc-content">
+    <div class="doc-hero">
+      <div class="doc-eyebrow">多层测试体系</div>
+      <h1>五层防线<br><span>全部自动化</span></h1>
+      <p>从快到慢、从细到粗的五层防线。单元测试保证函数正确，覆盖率保证没有死角，Preview 截图保证组件视觉，VF 保证完整路径，E2E 保证真机真环境——不靠人肉回归。</p>
+      <div class="badge-row">
+        <span class="badge badge-green">覆盖率 ≥80%</span>
+        <span class="badge badge-blue">Roborazzi</span>
+        <span class="badge badge-purple">VF 全自动</span>
+        <span class="badge badge-orange">Maestro E2E</span>
+      </div>
+    </div>
+
+    <!-- TIERS -->
+    <div class="doc-section" id="tiers">
+      <h2>五层防线总览</h2>
+      <div style="display:flex;flex-direction:column;gap:0;background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+        <div style="display:grid;grid-template-columns:200px 1fr 90px;align-items:center;padding:18px 24px;border-bottom:1px solid var(--border);gap:16px;">
+          <div><div style="font-weight:600;font-size:14px;">单元测试</div><div style="font-size:11px;color:var(--text3);font-family:JetBrains Mono,monospace;">01 / 05</div></div>
+          <div style="font-size:13px;color:var(--text2);">三个模块（core / platform / shared）均有独立测试，Desktop 上跑无需设备</div>
+          <div style="font-family:JetBrains Mono,monospace;font-size:11px;padding:4px 10px;border-radius:20px;text-align:center;background:var(--green-dim);color:var(--green);justify-self:end;">秒级</div>
+        </div>
+        <div style="display:grid;grid-template-columns:200px 1fr 90px;align-items:center;padding:18px 24px;border-bottom:1px solid var(--border);gap:16px;">
+          <div><div style="font-weight:600;font-size:14px;">覆盖率门禁</div><div style="font-size:11px;color:var(--text3);font-family:JetBrains Mono,monospace;">02 / 05</div></div>
+          <div style="font-size:13px;color:var(--text2);">Kover 聚合覆盖率 ≥80% 硬性要求，低于阈值构建直接失败，不允许先上线再补测试</div>
+          <div style="font-family:JetBrains Mono,monospace;font-size:11px;padding:4px 10px;border-radius:20px;text-align:center;background:var(--green-dim);color:var(--green);justify-self:end;">秒级</div>
+        </div>
+        <div style="display:grid;grid-template-columns:200px 1fr 90px;align-items:center;padding:18px 24px;border-bottom:1px solid var(--border);gap:16px;">
+          <div><div style="font-weight:600;font-size:14px;">Preview 截图对比</div><div style="font-size:11px;color:var(--text3);font-family:JetBrains Mono,monospace;">03 / 05</div></div>
+          <div style="font-size:13px;color:var(--text2);">Roborazzi 自动扫描所有 @Preview，基于完整 Koin DI 环境，接近真实运行状态</div>
+          <div style="font-family:JetBrains Mono,monospace;font-size:11px;padding:4px 10px;border-radius:20px;text-align:center;background:var(--blue-dim);color:var(--blue);justify-self:end;">十秒级</div>
+        </div>
+        <div style="display:grid;grid-template-columns:200px 1fr 90px;align-items:center;padding:18px 24px;border-bottom:1px solid var(--border);gap:16px;">
+          <div><div style="font-weight:600;font-size:14px;">VF 全自动验证</div><div style="font-size:11px;color:var(--text3);font-family:JetBrains Mono,monospace;">04 / 05</div></div>
+          <div style="font-size:13px;color:var(--text2);">操作路径级回归，覆盖逻辑 + UI，服务端数据固化，零手写断言</div>
+          <div style="font-family:JetBrains Mono,monospace;font-size:11px;padding:4px 10px;border-radius:20px;text-align:center;background:var(--orange-dim);color:var(--orange);justify-self:end;">分钟级</div>
+        </div>
+        <div style="display:grid;grid-template-columns:200px 1fr 90px;align-items:center;padding:18px 24px;gap:16px;">
+          <div><div style="font-weight:600;font-size:14px;">E2E 端到端</div><div style="font-size:11px;color:var(--text3);font-family:JetBrains Mono,monospace;">05 / 05</div></div>
+          <div style="font-size:13px;color:var(--text2);">Maestro 支持 Android + iOS 真机全流程测试</div>
+          <div style="font-family:JetBrains Mono,monospace;font-size:11px;padding:4px 10px;border-radius:20px;text-align:center;background:var(--orange-dim);color:var(--orange);justify-self:end;">分钟级</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- UNIT -->
+    <div class="doc-section" id="unit">
+      <h2>单元测试</h2>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>命令</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td><code>./gradlew :a-core:allTests</code></td><td class="desc">Core 模块测试</td></tr>
+            <tr><td><code>./gradlew :a-platform:allTests</code></td><td class="desc">Platform 模块测试</td></tr>
+            <tr><td><code>./gradlew :a-shared:allTests</code></td><td class="desc">Shared 模块测试</td></tr>
+            <tr><td><code>./gradlew :a-shared:desktopTest</code></td><td class="desc">Shared Desktop 测试（最快，无需设备）</td></tr>
+            <tr><td><code>./gradlew :a-shared:desktopTest --tests "*.ChatDaoStressTest"</code></td><td class="desc">Chat 压力测试</td></tr>
+            <tr><td><code>./gradlew :a-shared:desktopTest --tests "*.ChatDaoWindowTest"</code></td><td class="desc">Chat 窗口查询测试</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- COVERAGE -->
+    <div class="doc-section" id="coverage">
+      <h2>覆盖率门禁</h2>
+      <div class="callout callout-green">
+        <strong>硬性要求：≥80%（LINE，JaCoCo 引擎）</strong>
+        <p>低于阈值构建直接失败，不允许"先上线再补测试"。覆盖率由 Koin 完整 DI 环境保证可信度。</p>
+      </div>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>命令</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td><code>./gradlew koverHtmlReport</code></td><td class="desc">全模块聚合覆盖率报告（HTML）</td></tr>
+            <tr><td><code>./gradlew koverLog</code></td><td class="desc">全模块覆盖率摘要（控制台）</td></tr>
+            <tr><td><code>./gradlew koverVerify</code></td><td class="desc">全模块覆盖率验证（≥80%，构建失败时用）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SCREENSHOT -->
+    <div class="doc-section" id="screenshot">
+      <h2>Preview 截图对比</h2>
+      <p>通过 <code>generateComposePreviewRobolectricTests</code> 自动扫描所有 <code>@Preview</code> 函数生成截图测试，无需手写测试类。新增 Preview 即自动纳入覆盖，<code>private</code> Preview 会被排除。</p>
+
+      <div class="callout callout-blue">
+        <strong>关键优势</strong>
+        <p>Preview 基于 Koin 启动完整的依赖注入环境（DI + 导航 + i18n + 主题），不是假数据的静态预览，而是接近真实运行状态的组件渲染，截图对比的可信度远高于普通 Preview。</p>
+      </div>
+
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>命令</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td><code>./gradlew :androidApp:recordRoborazziDebug</code></td><td class="desc">录制基准截图（首次或变更后执行）</td></tr>
+            <tr><td><code>./gradlew :androidApp:verifyRoborazziDebug</code></td><td class="desc">验证截图差异（CI 上执行）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- VF -->
+    <div class="doc-section" id="vf">
+      <h2>VF 截图回归</h2>
+      <p>录制 → ADB 回放 → SSIM 截图对比。详见 <a href="../pages/vf-validation.html" style="color:var(--accent);">VF 全自动验证文档</a>。</p>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>命令</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td><code>./gradlew verifyVf</code></td><td class="desc">全量 VF 验证</td></tr>
+            <tr><td><code>./gradlew verifyVf -Pvf.dir=&lt;path&gt;</code></td><td class="desc">指定目录验证</td></tr>
+            <tr><td><code>./gradlew cleanVerification</code></td><td class="desc">清除验证产物</td></tr>
+            <tr><td><code>/update-vf</code></td><td class="desc">AI 操控手机 + TimeTravel 浮窗录制</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>录制方式</h3>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-title">手动录制</div>
+          <div class="card-desc">App 内 TT 浮窗 → 「录制开始」→ 操作 → 「录制结束」→ 保存 zip</div>
+        </div>
+        <div class="card">
+          <div class="card-title">AI 自动录制</div>
+          <div class="card-desc"><code>/update-vf</code> 通过 adb-mcp 操作手机模拟人工交互，一条命令搞定</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- E2E -->
+    <div class="doc-section" id="e2e">
+      <h2>E2E 测试（Maestro）</h2>
+      <p>支持 Android + iOS 真机全流程测试，验证真实设备上的完整用户路径。</p>
+      <pre><span class="comment"># iOS</span>
+maestro test .maestro/flows/ -e APP_ID=com.example.archshowcase.ArchShowcase
+
+<span class="comment"># Android</span>
+maestro test .maestro/flows/ -e APP_ID=com.example.archshowcase
+
+<span class="comment"># 多设备同时连接时需指定 udid</span>
+maestro test .maestro/flows/ --udid &lt;device-udid&gt;</pre>
+
+      <h3>性能基准测试</h3>
+      <pre><span class="comment"># 生成 Baseline Profile（需连接设备 API 28+）</span>
+./gradlew :androidApp:generateBaselineProfile
+
+<span class="comment"># 启动基准测试</span>
+./gradlew :macrobenchmark:connectedBenchmarkAndroidTest</pre>
+    </div>
+
+    <div class="doc-footer-nav">
+      <a href="../pages/ai-spec.html">← AI 规范体系</a>
+      <a href="../../index.html" class="next"><span class="label">返回</span>主页 →</a>
+    </div>
+  </main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('.doc-section');
+const links = document.querySelectorAll('.sidebar-links a:not(.other)');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.sidebar-links a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KSP 代码生成 — ArchShowcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<style>:root { --accent: var(--blue); --accent-dim: var(--blue-dim); }</style>
+</head>
+<body>
+
+<nav class="doc-nav">
+  <a href="../../index.html" class="doc-nav-back">← ArchShowcase</a>
+  <span class="doc-nav-sep">/</span>
+  <span class="doc-nav-title">KSP 代码生成</span>
+  <span class="doc-nav-badge">ksp-annotations / ksp-processor</span>
+</nav>
+
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <div class="sidebar-label">本页目录</div>
+    <div class="sidebar-links">
+      <a href="#overview" class="active">概述</a>
+      <a href="#annotations">四个注解</a>
+      <a href="#replayable">@Replayable</a>
+      <a href="#route">@RouteRegistry</a>
+      <a href="#vf">@VfResolvable</a>
+      <a href="#custom">@CustomState</a>
+      <a href="#generated">生成产物</a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">其他文档</div>
+    <div class="sidebar-links">
+      <a href="../pages/state-restore.html" class="other">交互回溯</a>
+      <a href="../pages/obo-dispatcher.html" class="other">OBO 调度器</a>
+      <a href="../pages/perf-monitor.html" class="other">性能监控</a>
+      <a href="../pages/auto-tracking.html" class="other">全自动埋点</a>
+      <a href="../pages/vf-validation.html" class="other">VF 全自动验证</a>
+      <a href="../pages/ai-spec.html" class="other">AI 规范体系</a>
+      <a href="../pages/testing.html" class="other">测试体系</a>
+    </div>
+  </aside>
+
+  <main class="doc-content">
+    <div class="doc-hero">
+      <div class="doc-eyebrow">KSP 代码生成</div>
+      <h1>标两个注解<br><span>其余全自动</span></h1>
+      <p>四个注解消除大量重复代码。新增一个带回溯 + 全自动验证的页面 = 写业务代码 + 标两个注解，胶水代码、路由注册、验证接入全部自动生成。新人看到注解就知道这个模块具备哪些能力。</p>
+      <div class="badge-row">
+        <span class="badge badge-blue">@Replayable</span>
+        <span class="badge badge-green">@RouteRegistry</span>
+        <span class="badge badge-purple">@VfResolvable</span>
+        <span class="badge badge-orange">@CustomState</span>
+      </div>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div class="doc-section" id="overview">
+      <h2>概述</h2>
+      <div class="callout callout-blue">
+        <strong>实际感受</strong>
+        <p>写新页面时完全不需要关心"回溯怎么接入"、"VF 怎么注册"、"路由怎么序列化"这些基础设施问题，标上注解就能用，心智负担极低。</p>
+      </div>
+
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>注解</th><th>作用</th><th>生成内容</th></tr></thead>
+          <tbody>
+            <tr><td><code>@Replayable</code></td><td class="desc">接入交互回溯体系</td><td class="desc">ExportStrategy + FactoryHelpers</td></tr>
+            <tr><td><code>@RouteRegistry</code></td><td class="desc">路由注册</td><td class="desc">路由序列化 + 注册代码</td></tr>
+            <tr><td><code>@VfResolvable</code></td><td class="desc">接入 VF 验证体系</td><td class="desc">VF 解析器 + 注册入口</td></tr>
+            <tr><td><code>@CustomState</code></td><td class="desc">字段订阅 + 内存快照</td><td class="desc">SelectableState + MemoryTrackable</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ANNOTATIONS -->
+    <div class="doc-section" id="annotations">
+      <h2>四个注解一览</h2>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-title">接入成本</div>
+          <div class="card-desc">新增带回溯 + 全自动验证的页面 = 写业务代码 + 标 <strong>2 个注解</strong>（@Replayable + @VfResolvable），其余全部自动生成。</div>
+        </div>
+        <div class="card">
+          <div class="card-title">可读性</div>
+          <div class="card-desc">注解即文档。看到 @Replayable 就知道这个模块支持时间旅行，看到 @VfResolvable 就知道有全自动验证覆盖，不需要翻文档。</div>
+        </div>
+        <div class="card">
+          <div class="card-title">@Repeatable 支持</div>
+          <div class="card-desc">@Replayable 支持 @Repeatable，同一 Record 可标注多个注解，为不同 Store 各自独立生成一套代码。</div>
+        </div>
+        <div class="card">
+          <div class="card-title">生成文件位置</div>
+          <div class="card-desc"><code>a-shared/build/generated/ksp/metadata/commonMain/</code>，每个注解实例独立生成文件，不互相污染。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPLAYABLE -->
+    <div class="doc-section" id="replayable">
+      <h2>@Replayable — 接入交互回溯</h2>
+      <p>标注在 HistoryRecord 上，KSP 自动生成 ExportStrategy 并注册到 StoreExportRegistry。</p>
+      <pre><span class="ann">@Replayable</span>  <span class="comment">// storeName 为空时从父类推导</span>
+<span class="ann">@Serializable</span>
+<span class="kw">data class</span> MyHistoryRecord(
+    <span class="kw">val</span> type: MyHistoryType,
+    <span class="kw">val</span> timestamp: Long
+) : JvmSerializable {
+    <span class="kw">fun</span> applyToState(prevState: State): State = ...
+    <span class="kw">fun</span> toIntent(): Any = ...
+}</pre>
+
+      <p>生成产物：</p>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>文件</th><th>内容</th></tr></thead>
+          <tbody>
+            <tr><td><code>{Store}ExportStrategy.kt</code></td><td class="desc">SimpleExportStrategy 实现，包含 createInitialState、processRecord</td></tr>
+            <tr><td><code>GeneratedExportStrategies.kt</code></td><td class="desc">统一注册入口，registerGeneratedExportStrategies() 一次注册所有策略</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-blue">
+        <strong>@Repeatable 用法</strong>
+        <p>同一 Record 可多次标注，为不同 Store 各自生成代码：</p>
+      </div>
+      <pre><span class="ann">@Replayable</span>(stateClass = NavigationStore.State::<span class="kw">class</span>)
+<span class="ann">@Replayable</span>(stateClass = NavigationStore.State::<span class="kw">class</span>, storeName = <span class="str">"DemoNavigationStore"</span>)
+<span class="kw">data class</span> NavHistoryRecord(...)</pre>
+    </div>
+
+    <!-- ROUTE -->
+    <div class="doc-section" id="route">
+      <h2>@RouteRegistry — 路由注册</h2>
+      <p>新增页面只需一行注解声明，路由注册、序列化代码全部自动生成，无需手写。</p>
+      <pre><span class="ann">@RouteRegistry</span>
+<span class="ann">@Serializable</span>
+<span class="kw">data class</span> ImageDetailRoute(<span class="kw">val</span> imageId: String) : AppRoute
+
+<span class="comment">// KSP 自动生成：</span>
+<span class="comment">// - 路由序列化适配器</span>
+<span class="comment">// - RouteRegistry 注册代码</span>
+<span class="comment">// - Decompose ChildFactory 分支</span></pre>
+
+      <div class="callout callout-green">
+        <strong>效果</strong>
+        <p>新增一个路由 = 定义 data class + 加一行 @RouteRegistry，不需要手写注册逻辑、序列化、ChildFactory 分支。</p>
+      </div>
+    </div>
+
+    <!-- VF -->
+    <div class="doc-section" id="vf">
+      <h2>@VfResolvable — 接入 VF 验证</h2>
+      <p>标注在业务模块上，自动生成 VF 解析器并注册到验证体系，新模块无需手动配置。</p>
+      <pre><span class="ann">@VfResolvable</span>
+<span class="kw">class</span> ImageDemoComponent(...) : ImageDemoComponent {
+    <span class="comment">// 业务逻辑...</span>
+}
+
+<span class="comment">// KSP 自动生成：</span>
+<span class="comment">// - VfResolver 实现</span>
+<span class="comment">// - GeneratedVfResolvers.kt 统一注册入口</span></pre>
+
+      <div class="callout callout-purple">
+        <strong>与 @Replayable 联动</strong>
+        <p>@VfResolvable 依赖 @Replayable 提供的状态回溯能力。两个注解组合，新页面同时获得：时间旅行调试 + 全自动 VF 回归验证。</p>
+      </div>
+    </div>
+
+    <!-- CUSTOM -->
+    <div class="doc-section" id="custom">
+      <h2>@CustomState — 字段订阅 + 内存快照</h2>
+      <p>复合注解，等价于同时标注 <code>@SelectableState</code> + <code>@MemoryTrackable</code>，一次标注同时生成两套代码。</p>
+
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-title">@SelectableState（字段订阅）</div>
+          <div class="card-desc">生成细粒度的字段级订阅扩展，让 UI 只订阅它真正关心的字段，避免无关字段变化触发重组。</div>
+        </div>
+        <div class="card">
+          <div class="card-title">@MemoryTrackable（内存快照）</div>
+          <div class="card-desc">生成 <code>toMemorySnapshot()</code>，递归统计 Collection/Map 的 .size，用于 GC 压力检测中的 Store 集合大小报告。</div>
+        </div>
+      </div>
+
+      <pre><span class="ann">@CustomState</span>  <span class="comment">// = @SelectableState + @MemoryTrackable</span>
+<span class="kw">data class</span> ChatRoomState(
+    <span class="kw">val</span> messages: List&lt;Message&gt; = emptyList(),
+    <span class="kw">val</span> isLoading: Boolean = <span class="kw">false</span>,
+    <span class="kw">override val</span> history: AppendOnlyHistory&lt;ChatHistoryRecord&gt; = AppendOnlyHistory()
+) : ReplayableState&lt;ChatHistoryRecord&gt; { ... }
+
+<span class="comment">// 生成后可用：</span>
+state.selectMessages()        <span class="comment">// 仅订阅 messages 字段</span>
+state.toMemorySnapshot()      <span class="comment">// 输出到 GC 压力报告</span></pre>
+    </div>
+
+    <!-- GENERATED -->
+    <div class="doc-section" id="generated">
+      <h2>生成产物总览</h2>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>注解</th><th>生成文件</th><th>生成位置</th></tr></thead>
+          <tbody>
+            <tr><td><code>@Replayable</code></td><td><code>{Store}ExportStrategy.kt</code><br><code>GeneratedExportStrategies.kt</code></td><td class="desc">a-shared/build/generated/ksp/metadata/commonMain/</td></tr>
+            <tr><td><code>@RouteRegistry</code></td><td><code>GeneratedRoutes.kt</code></td><td class="desc">a-shared/build/generated/ksp/metadata/commonMain/</td></tr>
+            <tr><td><code>@VfResolvable</code></td><td><code>{Component}VfResolver.kt</code><br><code>GeneratedVfResolvers.kt</code></td><td class="desc">a-shared/build/generated/ksp/metadata/commonMain/</td></tr>
+            <tr><td><code>@CustomState</code></td><td><code>{State}Extensions.kt</code></td><td class="desc">a-shared/build/generated/ksp/metadata/commonMain/</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>模块结构</h3>
+      <div class="doc-table-wrap">
+        <table>
+          <thead><tr><th>模块</th><th>职责</th></tr></thead>
+          <tbody>
+            <tr><td><code>ksp-annotations</code></td><td class="desc">注解定义，所有 @Replayable / @RouteRegistry / @VfResolvable / @CustomState / @MemoryTrackable</td></tr>
+            <tr><td><code>ksp-processor</code></td><td class="desc">KSP 处理器，扫描注解 → 生成代码；每个注解实例独立生成文件，支持增量编译</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="doc-footer-nav">
+      <a href="../pages/auto-tracking.html">← 全自动埋点</a>
+      <a href="../pages/custom-ui.html" class="next"><span class="label">下一篇</span>自定义 UI →</a>
+    </div>
+  </main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('.doc-section');
+const links = document.querySelectorAll('.sidebar-links a:not(.other)');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.sidebar-links a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
