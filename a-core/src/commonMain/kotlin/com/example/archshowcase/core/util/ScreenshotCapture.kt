@@ -7,5 +7,6 @@ package com.example.archshowcase.core.util
  * 其他平台: 返回 null
  */
 expect object ScreenshotCapture {
+    fun prepareForCapture()
     fun capture(): ByteArray?
 }

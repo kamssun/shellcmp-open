@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.archshowcase.presentation.preview.PreviewWrapper
 import com.example.archshowcase.presentation.theme.AppTheme
 
 /** 替代 Material3 TopAppBar，固定高度 56dp */
@@ -42,6 +43,6 @@ fun AppTopBar(
 
 @Preview
 @Composable
-fun AppTopBarPreview() = AppTheme {
+fun AppTopBarPreview() = PreviewWrapper { _ ->
     AppTopBar(title = { AppText("Title", style = AppTheme.typography.titleMedium) })
 }

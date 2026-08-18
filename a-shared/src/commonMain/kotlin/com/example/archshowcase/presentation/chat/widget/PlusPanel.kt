@@ -19,6 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.archshowcase.i18n.tr
 import com.example.archshowcase.presentation.component.AppText
+import com.example.archshowcase.presentation.preview.PreviewWrapper
 import com.example.archshowcase.presentation.theme.AppTheme
 import com.example.archshowcase.resources.Res
 import com.example.archshowcase.resources.chat_plus_album
@@ -73,7 +74,7 @@ private fun PlusPanelItem(icon: String, label: String, onClick: () -> Unit) {
 @Preview
 @Composable
 private fun PlusPanelPreview() {
-    AppTheme {
+    PreviewWrapper { _ ->
         PlusPanel(onPhotoClick = {}, onCameraClick = {})
     }
 }

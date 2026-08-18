@@ -187,11 +187,14 @@ maestro test .maestro/flows/ -e APP_ID=com.example.archshowcase
 maestro test .maestro/flows/ --udid &lt;device-udid&gt;</pre>
 
       <h3>性能基准测试</h3>
-      <pre><span class="comment"># 生成 Baseline Profile（需连接设备 API 28+）</span>
-./gradlew :androidApp:generateBaselineProfile
+      <pre><span class="comment"># 生成 Release Baseline/Startup Profile（需连接真机）</span>
+./gradlew :androidApp:generateReleaseBaselineProfile
 
 <span class="comment"># 启动基准测试</span>
-./gradlew :macrobenchmark:connectedBenchmarkAndroidTest</pre>
+./gradlew :macrobenchmark:connectedBenchmarkReleaseAndroidTest
+
+<span class="comment"># Release R8/Profile 完整门禁</span>
+./gradlew verifyReleasePerformance</pre>
     </div>
 
     <div class="doc-footer-nav">

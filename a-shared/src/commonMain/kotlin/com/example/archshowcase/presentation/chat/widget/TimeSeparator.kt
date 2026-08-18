@@ -12,11 +12,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.archshowcase.presentation.component.AppText
+import com.example.archshowcase.presentation.preview.PreviewWrapper
 import com.example.archshowcase.presentation.theme.AppTheme
-import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 private const val FIVE_MINUTES_MS = 5 * 60 * 1000L
 
@@ -53,14 +54,14 @@ private fun formatChatTime(timestamp: Long): String {
     return if (local.date == now.date) {
         "$h:$m"
     } else {
-        "${local.monthNumber}月${local.dayOfMonth}日 $h:$m"
+        "${local.month.ordinal + 1}月${local.day}日 $h:$m"
     }
 }
 
 @Preview
 @Composable
 private fun TimeSeparatorPreview() {
-    AppTheme {
+    PreviewWrapper { _ ->
         TimeSeparator(timestamp = Clock.System.now().toEpochMilliseconds())
     }
 }

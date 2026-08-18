@@ -8,6 +8,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.tooling.CompositionErrorContext
 import androidx.compose.runtime.tooling.LocalCompositionErrorContext
 import com.example.archshowcase.core.AppConfig
+import com.example.archshowcase.core.AppRuntimeState
 import com.example.archshowcase.core.scheduler.OBOScheduler
 import com.example.archshowcase.core.util.Log
 import kotlinx.coroutines.CancellationException
@@ -101,7 +102,7 @@ fun OBOLaunchedEffect(
     debugTag: String? = null,
     block: suspend CoroutineScope.() -> Unit
 ) {
-    if (AppConfig.useOBOScheduler) {
+    if (AppConfig.useOBOScheduler && !AppRuntimeState.isInPreview) {
         val scope = rememberCoroutineScope()
         val errorContext = LocalCompositionErrorContext.current
         remember(key1) {
@@ -122,7 +123,7 @@ fun OBOLaunchedEffect(
     debugTag: String? = null,
     block: suspend CoroutineScope.() -> Unit
 ) {
-    if (AppConfig.useOBOScheduler) {
+    if (AppConfig.useOBOScheduler && !AppRuntimeState.isInPreview) {
         val scope = rememberCoroutineScope()
         val errorContext = LocalCompositionErrorContext.current
         remember(key1, key2) {
@@ -144,7 +145,7 @@ fun OBOLaunchedEffect(
     debugTag: String? = null,
     block: suspend CoroutineScope.() -> Unit
 ) {
-    if (AppConfig.useOBOScheduler) {
+    if (AppConfig.useOBOScheduler && !AppRuntimeState.isInPreview) {
         val scope = rememberCoroutineScope()
         val errorContext = LocalCompositionErrorContext.current
         remember(key1, key2, key3) {
@@ -164,7 +165,7 @@ fun OBOLaunchedEffect(
     debugTag: String? = null,
     block: suspend CoroutineScope.() -> Unit
 ) {
-    if (AppConfig.useOBOScheduler) {
+    if (AppConfig.useOBOScheduler && !AppRuntimeState.isInPreview) {
         val scope = rememberCoroutineScope()
         val errorContext = LocalCompositionErrorContext.current
         remember(*keys) {

@@ -8,11 +8,13 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -53,13 +55,14 @@ import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
 import io.github.vinceglb.filekit.readBytes
 import io.github.vinceglb.filekit.write
-import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.math.roundToInt
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 private const val OBO_TAG = "TimeTravel"
+private const val VF_CAPTURE_SETTLE_DELAY_MS = 3000L
 
 @Composable
 fun TimeTravelFloatingPanel(
@@ -77,7 +80,7 @@ fun TimeTravelFloatingPanel(
             events.getOrNull(i)?.takeIf { it.type == com.arkivanov.mvikotlin.core.store.StoreEventType.INTENT }
         } ?: return@selectAsState null
         val store = intentEvent.storeName.substringBefore(':')
-        val intent = intentEvent.value?.let { it::class.simpleName } ?: ""
+        val intent = intentEvent.value::class.simpleName ?: ""
         "$store · $intent"
     }
     val vfState by component.vfExportState.collectAsState()
@@ -85,6 +88,7 @@ fun TimeTravelFloatingPanel(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var pendingExportData by remember { mutableStateOf<ByteArray?>(null) }
     var pendingVfFiles by remember { mutableStateOf<Map<String, ByteArray>?>(null) }
+    var capturePreparing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     var offsetX by remember { mutableStateOf(0f) }
@@ -146,24 +150,42 @@ fun TimeTravelFloatingPanel(
         }
     }
 
-    Column(
-        modifier = modifier
-            .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
-            .onGloballyPositioned { coords ->
-                val pos = coords.positionInRoot()
-                var root: LayoutCoordinates? = coords
-                while (root?.parentLayoutCoordinates != null) root = root.parentLayoutCoordinates
-                val rs = root?.size ?: return@onGloballyPositioned
-                val baseX = pos.x - offsetX
-                val baseY = pos.y - offsetY
-                dragMinX = -baseX
-                dragMaxX = (rs.width - coords.size.width).coerceAtLeast(0).toFloat() - baseX
-                dragMinY = -baseY
-                dragMaxY = (rs.height - coords.size.height).coerceAtLeast(0).toFloat() - baseY
-            },
-        horizontalAlignment = Alignment.End,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
+    Box(modifier = modifier.fillMaxSize()) {
+        if (capturePreparing) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        awaitEachGesture {
+                            do {
+                                val event = awaitPointerEvent()
+                                event.changes.forEach { it.consume() }
+                            } while (event.changes.any { it.pressed })
+                        }
+                    }
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+                .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+                .onGloballyPositioned { coords ->
+                    val pos = coords.positionInRoot()
+                    var root: LayoutCoordinates? = coords
+                    while (root?.parentLayoutCoordinates != null) root = root.parentLayoutCoordinates
+                    val rs = root?.size ?: return@onGloballyPositioned
+                    val baseX = pos.x - offsetX
+                    val baseY = pos.y - offsetY
+                    dragMinX = -baseX
+                    dragMaxX = (rs.width - coords.size.width).coerceAtLeast(0).toFloat() - baseX
+                    dragMinY = -baseY
+                    dragMaxY = (rs.height - coords.size.height).coerceAtLeast(0).toFloat() - baseY
+                },
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
         errorMessage?.let { error ->
             Box(
                 modifier = Modifier
@@ -271,8 +293,8 @@ fun TimeTravelFloatingPanel(
                                             val fileName = "timetravel_${formatExportTime()}"
                                             pendingExportData = result.data
                                             fileSaverLauncher.launch(
-                                                fileName,
-                                                result.extension
+                                                suggestedName = fileName,
+                                                defaultExtension = result.extension
                                             )
                                             errorMessage = null
                                         }
@@ -309,11 +331,19 @@ fun TimeTravelFloatingPanel(
                                 is VfExportState.Idle -> {
                                     AppTextButton(onClick = {
                                         // 收起面板 → 等一帧渲染 → 截图 → 开始录制
+                                        if (capturePreparing) return@AppTextButton
+                                        capturePreparing = true
                                         expanded = false
                                         scope.oboLaunch(OBO_TAG) {
-                                            kotlinx.coroutines.delay(300)
-                                            val screenshot = com.example.archshowcase.core.util.ScreenshotCapture.capture()
-                                            component.onExportVfStart(screenshot)
+                                            try {
+                                                kotlinx.coroutines.delay(300)
+                                                com.example.archshowcase.core.util.ScreenshotCapture.prepareForCapture()
+                                                kotlinx.coroutines.delay(VF_CAPTURE_SETTLE_DELAY_MS)
+                                                val screenshot = com.example.archshowcase.core.util.ScreenshotCapture.capture()
+                                                component.onExportVfStart(screenshot)
+                                            } finally {
+                                                capturePreparing = false
+                                            }
                                         }
                                     }) {
                                         AppText("录制开始")
@@ -323,19 +353,27 @@ fun TimeTravelFloatingPanel(
                                     AppTextButton(
                                         onClick = {
                                             // 收起面板 → 等一帧渲染 → 截图 → 保存 VF
+                                            if (capturePreparing) return@AppTextButton
+                                            capturePreparing = true
                                             expanded = false
                                             scope.oboLaunch(OBO_TAG) {
-                                                kotlinx.coroutines.delay(300)
-                                                val endScreenshot = com.example.archshowcase.core.util.ScreenshotCapture.capture()
-                                                val files = component.onExportVfEnd("", endScreenshot)
-                                                if (files != null) {
-                                                    pendingVfFiles = files
-                                                    vfSaverLauncher.launch(
-                                                        "vf_${formatExportTime()}",
-                                                        "zip"
-                                                    )
-                                                } else {
-                                                    errorMessage = "录制导出失败"
+                                                try {
+                                                    kotlinx.coroutines.delay(300)
+                                                    com.example.archshowcase.core.util.ScreenshotCapture.prepareForCapture()
+                                                    kotlinx.coroutines.delay(VF_CAPTURE_SETTLE_DELAY_MS)
+                                                    val endScreenshot = com.example.archshowcase.core.util.ScreenshotCapture.capture()
+                                                    val files = component.onExportVfEnd("", endScreenshot)
+                                                    if (files != null) {
+                                                        pendingVfFiles = files
+                                                        vfSaverLauncher.launch(
+                                                            suggestedName = "vf_${formatExportTime()}",
+                                                            defaultExtension = "zip"
+                                                        )
+                                                    } else {
+                                                        errorMessage = "录制导出失败"
+                                                    }
+                                                } finally {
+                                                    capturePreparing = false
                                                 }
                                             }
                                         }
@@ -377,6 +415,8 @@ fun TimeTravelFloatingPanel(
             )
         }
     }
+}
+
 }
 
 /**
@@ -437,7 +477,7 @@ private class MutableZipBuffer {
 private fun buildLocalHeader(name: ByteArray, size: Int, crc: Int): ByteArray {
     val header = ByteArray(30 + name.size)
     // Signature: PK\x03\x04
-    header.putInt32LE(0, 0x04034b50.toInt())
+    header.putInt32LE(0, 0x04034b50)
     // Version needed: 20
     header.putInt16LE(4, 20)
     // Flags: 0, Method: 0 (stored)
@@ -457,7 +497,7 @@ private fun buildLocalHeader(name: ByteArray, size: Int, crc: Int): ByteArray {
 private fun buildCentralEntry(name: ByteArray, size: Int, crc: Int, localOffset: Int): ByteArray {
     val entry = ByteArray(46 + name.size)
     // Signature: PK\x01\x02
-    entry.putInt32LE(0, 0x02014b50.toInt())
+    entry.putInt32LE(0, 0x02014b50)
     // Version made by: 20, Version needed: 20
     entry.putInt16LE(4, 20)
     entry.putInt16LE(6, 20)
@@ -478,7 +518,7 @@ private fun buildCentralEntry(name: ByteArray, size: Int, crc: Int, localOffset:
 private fun buildEndRecord(entryCount: Int, centralSize: Int, centralOffset: Int): ByteArray {
     val record = ByteArray(22)
     // Signature: PK\x05\x06
-    record.putInt32LE(0, 0x06054b50.toInt())
+    record.putInt32LE(0, 0x06054b50)
     // Entries on this disk / total entries
     record.putInt16LE(8, entryCount)
     record.putInt16LE(10, entryCount)
@@ -516,6 +556,6 @@ private fun formatExportTime(): String {
     val nowMillis = Clock.System.now().toEpochMilliseconds()
     val instant = Instant.fromEpochMilliseconds(nowMillis)
     val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
-    return "${localDateTime.year}${localDateTime.monthNumber.toString().padStart(2, '0')}${localDateTime.dayOfMonth.toString().padStart(2, '0')}_" +
+    return "${localDateTime.year}${(localDateTime.month.ordinal + 1).toString().padStart(2, '0')}${localDateTime.day.toString().padStart(2, '0')}_" +
             "${localDateTime.hour.toString().padStart(2, '0')}${localDateTime.minute.toString().padStart(2, '0')}${localDateTime.second.toString().padStart(2, '0')}"
 }

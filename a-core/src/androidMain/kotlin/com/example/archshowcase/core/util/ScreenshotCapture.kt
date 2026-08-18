@@ -6,11 +6,29 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.view.PixelCopy
 import android.view.View
+import android.view.WindowInsets
+import android.view.inputmethod.InputMethodManager
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 actual object ScreenshotCapture {
+    actual fun prepareForCapture() {
+        val activity = ContextProvider.current ?: return
+        val window = activity.window
+        val rootView = window.decorView.findViewById<View>(android.R.id.content) ?: window.decorView
+        val focusedView = activity.currentFocus ?: rootView
+        focusedView.clearFocus()
+        val imm = activity.getSystemService(InputMethodManager::class.java)
+        val token = focusedView.windowToken ?: rootView.windowToken
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            rootView.windowInsetsController?.hide(WindowInsets.Type.ime())
+        }
+        imm?.hideSoftInputFromWindow(token, 0)
+        Log.d("Screenshot") { "prepareForCapture: requested IME hide" }
+    }
+
     actual fun capture(): ByteArray? = try {
         val activity = ContextProvider.current
         if (activity == null) {

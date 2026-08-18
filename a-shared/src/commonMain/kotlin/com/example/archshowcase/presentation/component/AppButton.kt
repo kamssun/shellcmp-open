@@ -23,9 +23,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.example.archshowcase.core.analytics.appClickable
+import com.example.archshowcase.presentation.preview.PreviewWrapper
 import com.example.archshowcase.presentation.theme.AppTheme
 
 /** 填充式按钮，按压变暗效果 */
@@ -159,18 +160,6 @@ fun AppIconButton(
 
 @Preview
 @Composable
-fun AppButtonPreview() = AppTheme {
+fun AppButtonPreview() = PreviewWrapper { _ ->
     AppButton(onClick = {}) { AppText("Button") }
-}
-
-@Preview
-@Composable
-fun AppTextButtonPreview() = AppTheme {
-    AppTextButton(onClick = {}) { AppText("Text Button") }
-}
-
-@Preview
-@Composable
-fun AppOutlinedButtonPreview() = AppTheme {
-    AppOutlinedButton(onClick = {}) { AppText("Outlined") }
 }

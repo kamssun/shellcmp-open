@@ -1,37 +1,61 @@
----
 id: archshowcase-performance
-trigger: "when working with lists, effects, LazyColumn, UI performance, or baseline profile"
+trigger: "when working with lists, effects, LazyColumn, UI performance, baseline profile, R8, ProGuard, minify, or shrinkResources"
 confidence: 1.0
 domain: performance
 source: project-rules
----
+title: "性能规范"
 
-# 性能规范
+action:
+  - "分析或解读 [PERF:*] 日志时，必须先读 docs/PERF_MONITOR.md 对照字段含义，禁止凭通用知识推断"
+  - "列表操作禁止 + / dropLast / takeLast，用 ArrayDeque + toList()（仅在数据变更时调用）"
+  - "OBO（One-By-One）是主线程调度器，oboLaunch / OBOScheduler.post 均在主线程执行，不是后台线程"
+  - "Effect 统一用 OBOLaunchedEffect（core.compose），避免低端设备卡顿"
+  - "主线程延迟任务（非 Compose 场景）用 OBOScheduler.post(tag) {}，tag 为来源标识（类名或模块名）。禁止用 Handler.postDelayed"
+  - "三方 SDK 的 Handler 调用由 build-plugin ASM Transform 自动拦截收束到 OBO，无需手动处理。修改黑名单见 OBOHandlerTransformFactory.SKIP_PREFIXES"
+  - "Intent 追踪：debug 保留完整信息，release 只记录简化信息（实现 Traceable 接口）"
+  - "LazyColumn/LazyRow item 内禁止嵌套超过 2 层"
+  - "列表 item 圆角用 Modifier.clip(shape).background(color, shape) 而非 Surface，因为 Surface 携带 CompositionLocal 开销，在滚动场景触发不必要重组。仅在需要 ripple/contentColor/tonal elevation 时才用 Surface"
+  - "圆角只在 item 最外层做一次，禁止内部子组件重复裁剪"
+  - "非全局数据的 Store 跟随页面销毁（绑定 ComponentContext 生命周期）"
+  - "动画/滚动等频繁变化的状态，用 lambda modifier 延迟读取：offset{} 代替 offset()，graphicsLayer{} 代替 alpha()/rotation()，drawBehind{} 代替 background()"
+  - "Composable 体内的排序/过滤/格式化用 remember(key) 缓存"
+  - "不要用 kotlinx-collections-immutable：PersistentList 未实现 java.io.Serializable，与 MVIKotlin JvmSerializable 冲突导致导出崩溃。集合稳定性通过 a-shared/compose_stability_config.conf 声明 List/Set/Map 为 stable 解决"
+  - "列表 item 内用 AppText（基于 BasicText），项目已移除 Material3 依赖"
+  - "Lazy* 列表改为自适应网格时仍必须保留 stable key + contentType，并复核 item 嵌套层级和复用成本"
+  - "自适应网格列数按最小单元宽度和可读性决策，禁止用具体设备名替代布局约束"
+  - "Kotlin 2.0+ Compose Compiler 默认启用 strong skipping：unstable 参数用 === 比较，stable 参数用 equals() 比较，两者都能 skip。不要为了解决重组问题盲目往 compose_stability_config.conf 加类，先确认真正的重组源头"
+  - "启动路径或主页结构大改后，重新生成 Release Baseline/Startup Profile：./gradlew :androidApp:generateReleaseBaselineProfile"
+  - "Baseline/Startup Profile 生成产物（baseline-prof.txt / startup-prof.txt）需提交到版本控制"
+  - "BaselineProfileGenerator 必须在 collect(includeInStartupProfile=true) 内通过 RealLoginPreparer 完成真实登录，随后 killProcess 再采集已登录 Main 冷启，并用 requireMainScreen 校验"
+  - "发版前跑 ./gradlew verifyReleasePerformance；若 AAB 的 BUNDLE-METADATA/com.android.tools/r8.json 没有任何 DEX startup=true，则不算最高性能闭环"
+  - "修改 R8/ProGuard/minify/shrinkResources 前，先核查 androidApp/build.gradle.kts、gradle.properties、androidApp/proguard-rules.pro 的当前配置"
+  - "release/benchmark 构建必须保持 minifyEnabled + shrinkResources + proguard-android-optimize.txt，除非用户明确要求临时诊断"
+  - "新增 keep/dontwarn 规则必须写清保留原因并指向对应 SDK、反射路径、序列化框架或运行时错误"
+  - "keep 规则优先窄化到具体类、成员、注解、接口实现或条件规则；能允许 shrinking/optimization/obfuscation 时不要用全量保留"
+  - "高频回调路径（帧回调、滚动监听等）禁止 >1ms 的操作和不必要的对象创建，系统调用结果缓存、序列化延迟到低频路径"
+  - "GC 压力检测（AppConfig.enableGcPressureDetection）会在 blocking GC 累积超阈值时输出 Store 集合大小报告，排查内存膨胀时看 [PERF:GC_PRESSURE] 日志"
 
-## Action
+sections:
+  r8_keep_rules:
+    - "日常静态门禁跑 ./gradlew verifyReleasePerformanceConfig；发版门禁跑 ./gradlew verifyReleasePerformance"
+    - "排查包体或混淆问题时，先区分配置问题、SDK consumer rules 缺失、项目自定义反射和可选依赖 dontwarn"
+    - "Broad package keep（如 -keep class xxx.** { *; }）只能作为有证据的 SDK 兼容兜底，新增前必须说明为什么不能窄化"
+    - "dontwarn 仅用于确认是 compileOnly/可选依赖或平台不存在类；禁止用 dontwarn 掩盖真实运行时依赖缺失"
+    - "涉及 Gson TypeToken、kotlinx.serialization、Retrofit、ServiceLoader、Class.forName、注解反射时，必须保留 Signature/Annotation 等必要 attributes 或对应成员"
+    - "删除/收窄 keep 规则后至少跑 :androidApp:assembleRelease 或 :androidApp:assembleBenchmark；涉及启动/主页路径时补跑 Baseline Profile 或 Macrobenchmark"
+  release_performance_gate:
+    - "静态配置必须满足：AGP >=9.1、release/benchmark 使用优化 R8、BaselineProfileGenerator 真实登录后 killProcess 再采集已登录 Main 冷启"
+    - "release 产物必须满足：APK/AAB/mapping 非空、APK 携带 .dm profile、AAB r8.json 显示 shrinking/obfuscation/optimization/repackage/resource optimization 均开启"
+    - "Startup Profile 是否生效以 AAB r8.json 为准；只看到 startup=false 时，先重新生成 startup-prof.txt，再跑 verifyReleasePerformance"
+    - "Macrobenchmark 至少对比 NoCompilation 与 BaselineProfile 冷启动；上线后继续用 [PERF:PROFILE]、[PERF:STARTUP]、Android Vitals/Firebase Performance 或自研上报看 P90/P95"
+  trace_analysis:
+    - "分析 Perfetto/btrace 前先建立证据链：记录已确认的时间段、线程、slice、状态和来源，禁止把猜测写成结论"
+    - "性能排查先看启动/帧/GC 等高层指标，再按时间窗下钻到线程和 slice"
+    - "长耗时 slice 必须结合线程状态区分 Running、Runnable、Sleeping 或 Uninterruptible Sleep，不能只按 wall time 判断 CPU 忙"
+    - "线程阻塞时继续追阻塞源（锁、I/O、Binder、调度等待），未找到 blocker 前不要结束调查"
 
-- 分析或解读 `[PERF:*]` 日志时，必须先读 `docs/PERF_MONITOR.md` 对照字段含义，禁止凭通用知识推断
-- 列表操作禁止 `+`/`dropLast`/`takeLast`，用 `ArrayDeque` + `toList()`（仅在数据变更时调用）
-- OBO（One-By-One）是主线程调度器，`oboLaunch`/`OBOScheduler.post` 均在主线程执行，不是后台线程
-- Effect 统一用 `OBOLaunchedEffect`（`core.compose`），避免低端设备卡顿
-- 主线程延迟任务（非 Compose 场景）用 `OBOScheduler.post(tag) {}`，tag 为来源标识（类名或模块名）。禁止用 `Handler.postDelayed`
-- 三方 SDK 的 Handler 调用由 `build-plugin` ASM Transform 自动拦截收束到 OBO，无需手动处理。修改黑名单见 `OBOHandlerTransformFactory.SKIP_PREFIXES`
-- Intent 追踪: debug 保留完整信息，release 只记录简化信息（实现 `Traceable` 接口）
-- LazyColumn/LazyRow item 内禁止嵌套超过 2 层
-- 列表 item 圆角用 `Modifier.clip(shape).background(color, shape)` 而非 `Surface`，因为 `Surface` 携带 CompositionLocal 开销，在滚动场景触发不必要重组。仅在需要 ripple/contentColor/tonal elevation 时才用 `Surface`
-- 圆角只在 item 最外层做一次，禁止内部子组件重复裁剪
-- 非全局数据的 Store 跟随页面销毁（绑定 ComponentContext 生命周期）
-- 动画/滚动等频繁变化的状态，用 lambda modifier 延迟读取：`offset{}` 代替 `offset()`，`graphicsLayer{}` 代替 `alpha()`/`rotation()`，`drawBehind{}` 代替 `background()`
-- Composable 体内的排序/过滤/格式化用 `remember(key)` 缓存
-- **不要用 `kotlinx-collections-immutable`**：`PersistentList` 未实现 `java.io.Serializable`，与 MVIKotlin `JvmSerializable` 冲突导致导出崩溃。集合稳定性通过 `a-shared/compose_stability_config.conf` 声明 `List/Set/Map` 为 stable 解决
-- 列表 item 内用 `AppText`（基于 `BasicText`），项目已移除 Material3 依赖
-- Kotlin 2.0+ Compose Compiler 默认启用 strong skipping：unstable 参数用 `===` 比较，stable 参数用 `equals()` 比较，两者都能 skip。不要为了解决重组问题盲目往 `compose_stability_config.conf` 加类，先确认真正的重组源头
-- 启动路径或主页结构大改后，重新生成 Baseline Profile：`./gradlew :androidApp:generateBaselineProfile`
-- Baseline Profile 生成产物（`baseline-prof.txt`）需提交到版本控制
-- 高频回调路径（帧回调、滚动监听等）禁止 >1ms 的操作和不必要的对象创建——系统调用结果缓存、序列化延迟到低频路径
-- GC 压力检测（`AppConfig.enableGcPressureDetection`）会在 blocking GC 累积超阈值时输出 Store 集合大小报告，排查内存膨胀时看 `[PERF:GC_PRESSURE]` 日志
-
-## Forbidden
-
-- 怀疑线程安全问题时，必须先确认实际调用路径是否真的跨线程，禁止未经验证就加锁或改 copy-on-write
-
+forbidden:
+  - "怀疑线程安全问题时，必须先确认实际调用路径是否真的跨线程，禁止未经验证就加锁或改 copy-on-write"
+  - "禁止为通过构建直接关闭 release minify、shrinkResources 或 R8 优化"
+  - "禁止把 r8.json startup=false 的 release 包描述为已完成 Startup Profile 闭环"
+  - "禁止新增无来源说明的 package-wide keep、** 通配 keep 或全局 enum keep"

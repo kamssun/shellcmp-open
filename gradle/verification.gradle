@@ -1,3 +1,7 @@
+import java.util.zip.ZipFile
+
+def repoRootDir = rootProject.projectDir
+
 tasks.register("verifyVf", Exec) {
     group = "verification"
     description = "Run VF screenshot regression (all or -Pvf.dir=<path>)"
@@ -11,8 +15,240 @@ tasks.register("cleanVerification", Exec) {
     commandLine("bash", "tools/verify/run_verification.sh", "--clean", "tools/verify/test-vfs")
 }
 
+tasks.register("verifyPreviewWrappers") {
+    group = "verification"
+    description = "Verify Compose previews use PreviewWrapper as their preview environment."
+
+    def previewSources = fileTree(new File(repoRootDir, "a-shared/src/commonMain/kotlin/com/example/archshowcase/presentation")) {
+        include("**/*.kt")
+    }
+    inputs.files(previewSources)
+
+    doLast {
+        def failures = []
+        def previewPattern = ~/(?s)@Preview(?:\([^)]*\))?\s*(?:@[A-Za-z0-9_.]+(?:\([^)]*\))?\s*)*(?:(?:private|internal|public)\s+)?fun\s+([A-Za-z0-9_]+)\s*\([^)]*\)\s*(?::[^{=]+)?\s*(=|\{)/
+        previewSources.files.each { File file ->
+            def text = file.getText("UTF-8")
+            def matcher = previewPattern.matcher(text)
+            while (matcher.find()) {
+                def nextPreview = text.indexOf("@Preview", matcher.end())
+                def previewBlock = text.substring(matcher.start(), nextPreview >= 0 ? nextPreview : text.length())
+                if (!previewBlock.contains("PreviewWrapper")) {
+                    failures += "${repoRootDir.toPath().relativize(file.toPath())}:${text.substring(0, matcher.start()).count("\n") + 1} ${matcher.group(1)}"
+                }
+            }
+        }
+        if (!failures.isEmpty()) {
+            throw new GradleException("Compose @Preview functions must use PreviewWrapper:\n${failures.join("\n")}")
+        }
+        logger.lifecycle("[preview] All Compose previews use PreviewWrapper.")
+    }
+}
+
 subprojects {
     tasks.matching { it.name == "clean" }.configureEach {
         finalizedBy(rootProject.tasks.named("cleanVerification"))
     }
+}
+
+tasks.register("verifyReleasePerformanceConfig") {
+    group = "verification"
+    description = "Verify release R8, Startup Profile, and keep-rule performance configuration."
+
+    def configFiles = [
+        versions: new File(repoRootDir, "gradle/libs.versions.toml"),
+        gradleProperties: new File(repoRootDir, "gradle.properties"),
+        appBuild: new File(repoRootDir, "androidApp/build.gradle.kts"),
+        proguard: new File(repoRootDir, "androidApp/proguard-rules.pro"),
+        macroBuild: new File(repoRootDir, "macrobenchmark/build.gradle.kts"),
+        generator: new File(repoRootDir, "macrobenchmark/src/main/kotlin/com/example/archshowcase/macrobenchmark/BaselineProfileGenerator.kt"),
+        realLoginPreparer: new File(repoRootDir, "macrobenchmark/src/main/kotlin/com/example/archshowcase/macrobenchmark/RealLoginPreparer.kt"),
+        authObserver: new File(repoRootDir, "a-shared/src/commonMain/kotlin/com/example/archshowcase/presentation/auth/AuthObserverComponent.kt"),
+        appMain: new File(repoRootDir, "androidApp/src/main/kotlin/com/example/archshowcase/MainActivity.kt"),
+        baselineProfile: new File(repoRootDir, "androidApp/src/release/generated/baselineProfiles/baseline-prof.txt"),
+        startupProfile: new File(repoRootDir, "androidApp/src/release/generated/baselineProfiles/startup-prof.txt"),
+    ]
+
+    inputs.files(
+        configFiles.values(),
+    )
+
+    doLast {
+        def fail = { String message ->
+            throw new GradleException("[performance] ${message}")
+        }
+        def textOf = { String label, File file ->
+            if (!file.isFile()) fail("Missing ${label}")
+            file.getText("UTF-8")
+        }
+        def requireText = { String label, String text, String needle ->
+            if (!text.contains(needle)) fail("${label} must contain `${needle}`")
+        }
+        def rejectText = { String label, String text, String needle ->
+            if (text.contains(needle)) fail("${label} must not contain `${needle}`")
+        }
+        def requireRegex = { String label, String text, String regex ->
+            if (!(text =~ regex).find()) fail("${label} missing required pattern: ${regex}")
+        }
+        def requireAnyText = { String label, String text, List<String> needles ->
+            if (!needles.any { text.contains(it) }) {
+                fail("${label} must contain one of: ${needles.join(", ")}")
+            }
+        }
+
+        def versions = textOf("gradle/libs.versions.toml", configFiles.versions)
+        def agpMatcher = versions =~ /(?m)^agp\s*=\s*"([^"]+)"/
+        if (!agpMatcher.find()) fail("gradle/libs.versions.toml must declare AGP version")
+        def agpVersion = agpMatcher.group(1)
+        def agpParts = agpVersion.tokenize(".").collect { it.replaceFirst(/[^0-9].*$/, "") as int }
+        if (agpParts[0] < 9 || (agpParts[0] == 9 && agpParts[1] < 1)) {
+            fail("AGP ${agpVersion} is below the current release performance baseline 9.1")
+        }
+
+        def gradleProperties = textOf("gradle.properties", configFiles.gradleProperties)
+        rejectText("gradle.properties", gradleProperties, "android.enableR8.fullMode=false")
+        rejectText("gradle.properties", gradleProperties, "android.r8.optimizedResourceShrinking=false")
+
+        def appBuild = textOf("androidApp/build.gradle.kts", configFiles.appBuild)
+        requireRegex("androidApp release buildType", appBuild, /(?s)getByName\("release"\).*?isMinifyEnabled\s*=\s*true/)
+        requireRegex("androidApp release buildType", appBuild, /(?s)getByName\("release"\).*?isShrinkResources\s*=\s*true/)
+        requireText("androidApp release buildType", appBuild, 'getDefaultProguardFile("proguard-android-optimize.txt")')
+        rejectText("androidApp release buildType", appBuild, 'getDefaultProguardFile("proguard-android.txt")')
+        requireRegex("androidApp benchmark buildType", appBuild, /(?s)create\("benchmark"\).*?initWith\(getByName\("release"\)\)/)
+        requireText("androidApp dependencies", appBuild, 'baselineProfile(project(":macrobenchmark"))')
+        requireText("androidApp dependencies", appBuild, "implementation(libs.profileinstaller)")
+
+        def appMain = textOf("MainActivity", configFiles.appMain)
+        rejectText("MainActivity", appMain, "BenchmarkLaunchSetup")
+
+        def macroBuild = textOf("macrobenchmark/build.gradle.kts", configFiles.macroBuild)
+        requireText("macrobenchmark login args", macroBuild, "benchmarkEmail")
+        rejectText("macrobenchmark baselineProfile", macroBuild, "managedDevices +=")
+
+        def proguard = textOf("androidApp/proguard-rules.pro", configFiles.proguard)
+        if ((proguard =~ /(?m)^\s*-(dontoptimize|dontobfuscate|dontshrink)\b/).find()) {
+            fail("androidApp/proguard-rules.pro must not disable R8 optimization, obfuscation, or shrinking")
+        }
+        def proguardLines = proguard.readLines()
+        def broadKeepsWithoutReason = []
+        proguardLines.eachWithIndex { String line, int index ->
+            def trimmed = line.trim()
+            def isBroadPackageKeep =
+                trimmed ==~ /-keep(?:,[^ ]*)?\s+class\s+\S+\.\*\*\s*\{\s*\*;\s*\}/ ||
+                trimmed ==~ /-keep(?:,[^ ]*)?\s+class\s+\*\*\.[^ ]*\.\*\*\s*\{\s*\*;\s*\}/
+            if (isBroadPackageKeep) {
+                def from = Math.max(0, index - 4)
+                def context = proguardLines.subList(from, index + 1).join("\n")
+                if (!context.contains("keep-reason:")) {
+                    broadKeepsWithoutReason += "${index + 1}: ${trimmed}"
+                }
+            }
+        }
+        if (!broadKeepsWithoutReason.isEmpty()) {
+            fail("Broad R8 keep rules require a nearby `# keep-reason:` comment:\n${broadKeepsWithoutReason.join("\n")}")
+        }
+
+        def generator = textOf("macrobenchmark/src/main/kotlin/com/example/archshowcase/macrobenchmark/BaselineProfileGenerator.kt", configFiles.generator)
+        requireText("BaselineProfileGenerator", generator, "RealLoginPreparer.prepare(this)")
+        requireText("BaselineProfileGenerator", generator, "killProcess()")
+        requireText("BaselineProfileGenerator", generator, "RealLoginPreparer.requireMainScreen()")
+        requireText("BaselineProfileGenerator", generator, "includeInStartupProfile = true")
+        requireText("BaselineProfileGenerator", generator, "filterPredicate = ::isReleaseStartupProfileRule")
+        rejectText("BaselineProfileGenerator", generator, "startActivityWithSeededLogin")
+        rejectText("BaselineProfileGenerator", generator, "a_prepareRealLoggedInState")
+
+        def realLoginPreparer = textOf("RealLoginPreparer", configFiles.realLoginPreparer)
+        requireText("RealLoginPreparer", realLoginPreparer, "benchmarkEmail")
+        requireText("RealLoginPreparer", realLoginPreparer, "login_email_button")
+        requireText("RealLoginPreparer", realLoginPreparer, "MAIN_TAB_TEXTS")
+        requireText("RealLoginPreparer", realLoginPreparer, "manualLogin")
+        rejectText("RealLoginPreparer", realLoginPreparer, "require(email.isNotBlank())")
+        rejectText("RealLoginPreparer", realLoginPreparer, "seedLoggedInUser")
+
+        def authObserver = textOf("AuthObserverComponent", configFiles.authObserver)
+        requireText("AuthObserverComponent", authObserver, "loggedInLandingRoute()")
+        requireText("AuthObserverComponent", authObserver, "Route.Main")
+        rejectText("AuthObserverComponent", authObserver, "navigator.replaceAll(Route.Home)")
+
+        if (configFiles.baselineProfile.readLines().size() < 100) {
+            fail("baseline-prof.txt looks too small; regenerate Baseline Profile before release")
+        }
+        [baselineProfile: configFiles.baselineProfile, startupProfile: configFiles.startupProfile].each { String label, File file ->
+            def profile = textOf(label, file)
+            rejectText(label, profile, "BenchmarkLaunch")
+            rejectText(label, profile, "AuthBenchmarkSetup")
+            rejectText(label, profile, "com/example/archshowcase/presentation/login")
+            requireAnyText(label, profile, [
+                "com/example/archshowcase/presentation/main",
+                "MainContentKt",
+                "DefaultMainComponent",
+                "MainTab",
+            ])
+        }
+
+        logger.lifecycle("[performance] Release performance config gate passed for AGP ${agpVersion}.")
+    }
+}
+
+tasks.register("verifyReleasePerformanceArtifacts") {
+    group = "verification"
+    description = "Build release artifacts and verify R8/Profile metadata for the performance release gate."
+    dependsOn(":androidApp:assembleRelease", ":androidApp:bundleRelease")
+
+    def apkFile = new File(repoRootDir, "androidApp/build/outputs/apk/release/androidApp-release.apk")
+    def aabFile = new File(repoRootDir, "androidApp/build/outputs/bundle/release/androidApp-release.aab")
+    def mappingFile = new File(repoRootDir, "androidApp/build/outputs/mapping/release/mapping.txt")
+    def dmDir = new File(repoRootDir, "androidApp/build/outputs/apk/release/baselineProfiles")
+
+    doLast {
+        def fail = { String message ->
+            throw new GradleException("[performance] ${message}")
+        }
+        def requireFile = { String label, File file ->
+            if (!file.isFile() || file.length() == 0L) fail("Missing or empty artifact: ${label}")
+            file
+        }
+
+        requireFile("androidApp/build/outputs/apk/release/androidApp-release.apk", apkFile)
+        requireFile("androidApp/build/outputs/bundle/release/androidApp-release.aab", aabFile)
+        requireFile("androidApp/build/outputs/mapping/release/mapping.txt", mappingFile)
+
+        def dmFiles = []
+        if (dmDir.isDirectory()) {
+            dmDir.eachFileRecurse { file ->
+                if (file.name.endsWith(".dm")) dmFiles += file
+            }
+        }
+        if (dmFiles.isEmpty() || dmFiles.every { it.length() == 0L }) {
+            fail("Release APK must package non-empty Baseline Profile .dm artifacts")
+        }
+
+        new ZipFile(aabFile).withCloseable { zip ->
+            def r8Entry = zip.getEntry("BUNDLE-METADATA/com.android.tools/r8.json")
+            if (r8Entry == null) fail("AAB is missing BUNDLE-METADATA/com.android.tools/r8.json")
+            def r8Json = zip.getInputStream(r8Entry).getText("UTF-8")
+            [
+                '"isDebugModeEnabled":false',
+                '"isShrinkingEnabled":true',
+                '"isObfuscationEnabled":true',
+                '"isOptimizationsEnabled":true',
+                '"isProGuardCompatibilityModeEnabled":false',
+                '"isRepackageClassesEnabled":true',
+                '"isOptimizedShrinkingEnabled":true',
+            ].each { required ->
+                if (!r8Json.contains(required)) fail("r8.json must contain ${required}")
+            }
+            if (!r8Json.contains('"startup":true')) {
+                fail("Startup Profile was not applied: r8.json contains no DEX with `\"startup\": true`")
+            }
+        }
+
+        logger.lifecycle("[performance] Release performance artifact gate passed.")
+    }
+}
+
+tasks.register("verifyReleasePerformance") {
+    group = "verification"
+    description = "Run the full release performance gate: static config plus release R8/Profile artifacts."
+    dependsOn("verifyReleasePerformanceConfig", "verifyReleasePerformanceArtifacts")
 }

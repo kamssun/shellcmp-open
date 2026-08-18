@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.archshowcase.presentation.preview.PreviewWrapper
 import com.example.archshowcase.presentation.theme.AppTheme
 
 /** 替代 Material3 CircularProgressIndicator（不定进度）。在 AppButton 内部自动使用 contentColor。 */
@@ -98,7 +99,7 @@ fun AppLinearProgress(
 
 @Preview
 @Composable
-fun AppProgressPreview() = AppTheme {
+fun AppProgressPreview() = PreviewWrapper { _ ->
     Column {
         AppCircularProgress()
         Spacer(Modifier.height(16.dp))

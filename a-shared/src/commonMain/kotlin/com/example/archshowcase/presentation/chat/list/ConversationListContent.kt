@@ -49,9 +49,9 @@ import com.example.archshowcase.resources.chat_preview_video
 import com.example.archshowcase.resources.chat_preview_voice
 import com.example.archshowcase.resources.chat_typing
 import kotlin.time.Clock
-import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Instant
 
 @OptIn(FlowPreview::class)
 @Composable
@@ -239,7 +239,7 @@ private fun formatTime(timestamp: Long): String {
     return if (local.date == now.date) {
         "${local.hour.toString().padStart(2, '0')}:${local.minute.toString().padStart(2, '0')}"
     } else {
-        "${local.monthNumber}/${local.dayOfMonth}"
+        "${local.month.ordinal + 1}/${local.day}"
     }
 }
 

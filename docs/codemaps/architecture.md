@@ -28,7 +28,7 @@
 | 归因 SDK | Adjust 5.5.0 (Android) / ~5.0 (iOS pod) |
 | 日志 | Kermit 2.1.0 + LogWriter 扩展 |
 | 性能追踪 | btrace (RheaTrace) 3.0 |
-| 启动优化 | Baseline Profile (benchmark 1.5.0-alpha03) |
+| 启动优化 | Baseline/Startup Profile (benchmark 1.5.0-alpha04) |
 | Handler 拦截 | build-plugin ASM Transform |
 | 截图测试 | Roborazzi 1.59.0 |
 | 覆盖率 | Kover 0.9.7 |
@@ -77,7 +77,7 @@ Intent → Executor → Msg → Reducer → State
 | build-plugin | Gradle ASM Transform（改写三方 SDK Handler 调用，收束到 OBO） |
 | ksp-annotations | @Replayable, @CustomState, @MemoryTrackable, @RouteRegistry, @VfResolvable 等 |
 | ksp-processor | KSP 处理器（EventMapper, ExportStrategy, SelectableState, ExposureParams 等） |
-| macrobenchmark | Baseline Profile 生成 + 启动基准测试 |
+| macrobenchmark | Baseline/Startup Profile 生成 + 启动基准测试 |
 | tools/verify | VF 截图回归（SSIM 引擎 + 录制/验证脚本） |
 
 ## 关键设计模式

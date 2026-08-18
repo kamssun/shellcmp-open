@@ -3,6 +3,8 @@ package com.example.archshowcase.presentation.chat.room
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
 import com.example.archshowcase.core.AppConfig
+import com.example.archshowcase.core.AppRuntimeState
+import com.example.archshowcase.core.trace.restore.RestoreRegistry
 import com.example.archshowcase.chat.model.ChatMessage
 import com.example.archshowcase.chat.model.Conversation
 import com.example.archshowcase.chat.model.MessageBody
@@ -91,6 +93,7 @@ class ChatRoomStoreTest : KoinTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var store: ChatRoomStore
     private lateinit var fakeRepo: FakeChatRepository
+    private var previousEnableRestore: Boolean = true
 
     private val factory: ChatRoomStoreFactory by inject()
 
@@ -104,6 +107,8 @@ class ChatRoomStoreTest : KoinTest {
                 singleOf(::ChatRoomStoreFactory)
             })
         }
+        previousEnableRestore = AppConfig.enableRestore
+        AppConfig.enableRestore = true
         AppConfig.useOBOScheduler = false
         Dispatchers.setMain(testDispatcher)
         store = factory.create("conv_1")
@@ -113,7 +118,10 @@ class ChatRoomStoreTest : KoinTest {
     fun teardown() {
         store.dispose()
         Dispatchers.resetMain()
+        AppConfig.enableRestore = previousEnableRestore
         AppConfig.useOBOScheduler = true
+        AppRuntimeState.verificationMode = false
+        RestoreRegistry.clear()
         stopKoin()
     }
 
@@ -143,6 +151,31 @@ class ChatRoomStoreTest : KoinTest {
     }
 
     @Test
+    fun `Init starts observers when state is restored for verification`() {
+        store.dispose()
+        RestoreRegistry.clear()
+        AppRuntimeState.verificationMode = true
+        RestoreRegistry.updateSnapshotOrCreate(
+            chatRoomStoreName("conv_1"),
+            ChatRoomStore.State(conversationId = "conv_1", conversationName = "Restored", memberCount = 5)
+        )
+        store = factory.create("conv_1")
+
+        store.accept(ChatRoomStore.Intent.Init("conv_1"))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val msg = ChatMessage(
+            "sent_1", "conv_1", "me", "Me", null,
+            MessageBody.Text("uu"), 2000, true, SendStatus.SENT
+        )
+        fakeRepo.windowFlow.value = MessageWindow(messages = listOf(msg))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(1, store.state.messages.size)
+        assertEquals("uu", (store.state.messages.first().body as MessageBody.Text).text)
+    }
+
+    @Test
     fun `SendText dispatches to repository`() {
         store.accept(ChatRoomStore.Intent.Init("conv_1"))
         testDispatcher.scheduler.advanceUntilIdle()
@@ -154,6 +187,38 @@ class ChatRoomStoreTest : KoinTest {
         val (convId, body) = fakeRepo.sentMessages.first()
         assertEquals("conv_1", convId)
         assertEquals("Hi there", (body as MessageBody.Text).text)
+    }
+
+    @Test
+    fun `SendText records replayable history`() {
+        store.accept(ChatRoomStore.Intent.Init("conv_1"))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        store.accept(ChatRoomStore.Intent.SendText("Hi there"))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(
+            store.state.history.any { it.type == ChatRoomHistoryType.SendText("Hi there") },
+            "Expected SendText history, got ${store.state.history}"
+        )
+    }
+
+    @Test
+    fun `SendImage records generated url for replay`() {
+        store.accept(ChatRoomStore.Intent.Init("conv_1"))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        store.accept(ChatRoomStore.Intent.SendImage("", 400, 300, false))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val sendImage = store.state.history
+            .map { it.type }
+            .filterIsInstance<ChatRoomHistoryType.SendImage>()
+            .single()
+        assertTrue(sendImage.url.startsWith("https://picsum.photos/seed/img_"))
+        assertEquals(400, sendImage.width)
+        assertEquals(300, sendImage.height)
+        assertFalse(sendImage.isGif)
     }
 
     @Test
@@ -194,6 +259,27 @@ class ChatRoomStoreTest : KoinTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(true, store.state.showEmojiPanel)
+        assertFalse(store.state.showPlusPanel)
+    }
+
+    @Test
+    fun `SetComposerPanel sets exact panel state without toggling`() {
+        store.accept(ChatRoomStore.Intent.SetComposerPanel(ComposerPanel.Plus))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(store.state.showEmojiPanel)
+        assertTrue(store.state.showPlusPanel)
+
+        store.accept(ChatRoomStore.Intent.SetComposerPanel(ComposerPanel.Plus))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(store.state.showEmojiPanel)
+        assertTrue(store.state.showPlusPanel)
+
+        store.accept(ChatRoomStore.Intent.SetComposerPanel(ComposerPanel.None))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(store.state.showEmojiPanel)
         assertFalse(store.state.showPlusPanel)
     }
 

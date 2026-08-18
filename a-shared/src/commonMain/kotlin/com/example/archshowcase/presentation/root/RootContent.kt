@@ -5,9 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.stack.Children
 import com.arkivanov.decompose.extensions.compose.stack.animation.fade
 import com.arkivanov.decompose.extensions.compose.stack.animation.stackAnimation
@@ -34,7 +32,12 @@ fun RootContent(
     AppTheme {
         CompositionLocalProvider(LocalStringProvider provides koinInject<StringProvider>()) {
             AppScaffold { paddingValues ->
-                Box(modifier = modifier.fillMaxSize().padding(paddingValues)) {
+                Box(
+                    modifier = modifier
+                        .fillMaxSize()
+                        .exposeTestTagsAsResourceIds()
+                        .padding(paddingValues)
+                ) {
                     Children(
                         stack = component.childStack,
                         modifier = Modifier.fillMaxSize(),
@@ -55,9 +58,7 @@ fun RootContent(
                     component.timeTravelComponent?.let { timeTravel ->
                         TimeTravelFloatingPanel(
                             component = timeTravel,
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(16.dp)
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
                 }

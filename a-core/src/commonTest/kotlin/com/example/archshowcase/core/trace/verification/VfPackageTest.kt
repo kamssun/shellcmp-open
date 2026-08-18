@@ -53,6 +53,7 @@ class VfPackageTest {
         assertTrue(jsonStr.contains("\"verification_text\""))
         assertTrue(jsonStr.contains("\"intent_type\""))
         assertTrue(jsonStr.contains("\"delay_after_ms\""))
+        assertTrue(jsonStr.contains("\"wait_after_init_ms\""))
     }
 
     @Test
@@ -62,8 +63,18 @@ class VfPackageTest {
         val parsed = VfPackager.parseManifest(jsonStr).getOrThrow()
 
         assertEquals("ttr", parsed.tteFormat)
+        assertEquals(0, parsed.waitAfterInitMs)
         assertEquals(0.95, parsed.screenshotCompare.ssimThreshold)
         assertEquals("sequence", parsed.networkTape.matchStrategy)
+    }
+
+    @Test
+    fun `manifest wait_after_init_ms round-trip preserves data`() {
+        val manifest = createTestManifest().copy(waitAfterInitMs = 5000)
+        val jsonStr = VfPackager.serializeManifest(manifest)
+        val parsed = VfPackager.parseManifest(jsonStr).getOrThrow()
+
+        assertEquals(5000, parsed.waitAfterInitMs)
     }
 
     @Test

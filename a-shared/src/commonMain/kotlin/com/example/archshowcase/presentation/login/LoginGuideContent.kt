@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.archshowcase.resources.*
@@ -66,7 +67,9 @@ fun LoginGuideContent(component: LoginComponent) {
         AppOutlinedButton(
             onClick = { component.onEmailLogin() },
             enabled = !state.isLoading,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(LoginTestTags.EMAIL_LOGIN_BUTTON)
         ) {
             AppText(tr(Res.string.btn_email_code_login))
         }

@@ -1,25 +1,29 @@
----
 id: archshowcase-command-skill-agent
-trigger: "when creating or modifying claude code commands, skills, or agents (.claude/commands/, .claude/skills/, .claude/agents/)"
+trigger: "when creating or modifying claude code commands, skills, agents, or instincts (.claude/commands/, .claude/skills/, .claude/agents/, .claude/instincts/)"
 confidence: 1.0
 domain: workflow
 source: project-rules
----
+title: "Command / Skill / Agent / Instinct 设计规范"
 
-# Command 与 Agent 设计规范
+action:
+  - "Command 默认在主 agent 上下文执行，领域知识引用 instincts/docs，不内联"
+  - "需要 Agent 的场景：需预授权工具消除权限弹窗、需选模型（sonnet/opus）、流程独立不依赖主上下文能力"
+  - "不需要 Agent 的场景：流程中需调用其他 subagent、需访问主上下文的 instincts 自动加载"
+  - "领域知识放 docs 或 instincts，command/agent 启动时 Read 读取"
+  - "只有用户需要直接调用的能力才放 .claude/skills/，内部知识不放 skills"
+  - "创建新 skill 时使用 /skill-create 从 git 历史提取模式，不要手写"
+  - "修改 instincts 时先确定层级和归属：L1 通用、L2 领域、L3 深度文档；不要把专项流程塞进通用规则"
+  - "修改 instincts 时只写后续 AI 必须遵守的当前稳定约束；已修复问题、事故复盘、一次性迁移、临时排查命令不进 instincts"
+  - "修改 instincts 的触发场景或 L0 索引时，必须同步 AGENTS.md 与 CLAUDE.md"
+  - "从外部 skills 提炼项目规则时，只抽取稳定约束和决策边界；版本背景、长代码示例、一次性 checklist 下沉 docs 或不写"
+  - "instinct 规则用当前态描述，禁止项只保留仍需防止的未来错误"
+  - "外部 Android skills 与本项目冲突时，以 AppTheme/App*、Decompose、KMP source set 边界为准，必要时沉淀为 docs 而不是 L1/L2 规则"
 
-## Action
-
-- Command 默认在主 agent 上下文执行，领域知识引用 instincts/docs，不内联
-- 需要 Agent 的场景：需预授权工具消除权限弹窗、需选模型（sonnet/opus）、流程独立不依赖主上下文能力
-- 不需要 Agent 的场景：流程中需调用其他 subagent、需访问主上下文的 instincts 自动加载
-- 领域知识放 `docs/` 或 `instincts/`，command/agent 启动时 Read 读取
-- 只有用户需要直接调用的能力才放 `.claude/skills/`，内部知识不放 skills
-- 创建新 skill 时使用 `/skill-create` 从 git 历史提取模式，不要手写
-
-## Forbidden
-
-- Command 内联大段领域知识（引用 instincts/docs，保持单一来源）
-- 领域知识放 `.claude/skills/` 污染 `/` 命令列表
-- Agent 中内联领域知识（读取引用）
-- 需要调用其他 subagent 的流程套 agent（subagent 不能嵌套）
+forbidden:
+  - "禁止 Command 内联大段领域知识（引用 instincts/docs，保持单一来源）"
+  - "禁止领域知识放 .claude/skills/ 污染 / 命令列表"
+  - "禁止 Agent 中内联领域知识（读取引用）"
+  - "禁止需要调用其他 subagent 的流程套 agent（subagent 不能嵌套）"
+  - "禁止把外部 skill 原文整段复制进 instincts，导致项目规则失去极简和渐进式披露"
+  - "禁止把已修复的具体事故、历史踩坑或临时迁移过程写成长期 instinct"
+  - "禁止一个 instinct 同时覆盖多个无关领域，必要时拆分或下沉到 docs"

@@ -13,8 +13,7 @@ import androidx.compose.ui.semantics.Role
 import com.example.archshowcase.core.analytics.model.GestureType
 
 /**
- * 替代 Modifier.clickable，自动标记 InteractionContext。
- * 业务层禁止裸用 .clickable，统一走 appClickable。
+ * 交互归因 modifier。优先封装在 App* 或业务组件内部，少量自定义交互再直接使用。
  */
 @Composable
 fun Modifier.appClickable(
@@ -33,9 +32,7 @@ fun Modifier.appClickable(
     onClick = { withUserGesture(component, gestureType) { onClick() } },
 )
 
-/**
- * 替代 Modifier.combinedClickable，onClick / onLongClick / onDoubleClick 自动标记。
- */
+/** 长按/双击交互归因 modifier。优先由组件内部封装。 */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Modifier.appCombinedClickable(
@@ -57,9 +54,7 @@ fun Modifier.appCombinedClickable(
     onDoubleClick = onDoubleClick?.let { { withUserGesture(component, GestureType.DOUBLE_TAP) { it() } } },
 )
 
-/**
- * 替代 KeyboardActions，IME 动作自动标记 InteractionContext。
- */
+/** IME 动作归因入口。优先由输入组件内部封装。 */
 fun appKeyboardActions(
     component: String = "",
     onDone: (() -> Unit)? = null,

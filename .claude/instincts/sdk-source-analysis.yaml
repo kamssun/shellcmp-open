@@ -1,22 +1,27 @@
----
 id: archshowcase-sdk-source-analysis
 trigger: "when analyzing third-party SDK behavior or source code"
 confidence: 0.9
 domain: troubleshooting
 source: project-rules
----
+title: "SDK 源码分析规范"
 
-# SDK 源码分析规范
+action:
+  - "先锁定依赖坐标和版本，优先查 gradle/libs.versions.toml，再对照模块 build.gradle.kts"
+  - "优先在 ~/.gradle/caches/modules-2/files-2.1/ 查对应版本的 -sources.jar"
+  - ".gradle 找不到源码时，先完成 Gradle Sync 或构建拉取依赖；仍缺失再查官方文档、官方源码仓库、Maven/Google Maven 元数据，必要时用 Context7 补官方 API 说明"
+  - "Android API/SDK 用法不确定时，优先查 Android 官方文档或 Android CLI docs；外部 skill 中的版本号和示例只作线索，必须回到本项目依赖版本验证"
+  - "专项迁移（AGP、Play Billing、CameraX、Credential、XR 等）先确认当前项目是否命中该 SDK/场景，再决定是否加载对应官方迁移资料"
+  - "引入 Android-only SDK 前先确认 KMP 边界：commonMain 只放 expect/接口，平台实现放对应 source set"
+  - "SDK/AGP/KSP/Gradle 大版本升级时，同时确认声明版本、源码中废弃 API 使用和兼容性矩阵；代码里的废弃 API 可代表有效版本低于依赖声明"
+  - "KMP 项目禁止直接套用 Android-only AGP 迁移流程；先验证 Kotlin、Gradle、JDK、AGP、KSP 兼容性，再跑 ./gradlew help 和 build --dry-run"
+  - "身份、支付、Credential、AppFunctions 等敏感能力必须区分客户端接入和服务端校验/确认责任，禁止把客户端成功回调当成完整安全闭环"
+  - "为 SDK 添加 R8 keep/dontwarn 前，先查该版本 consumer-proguard-rules、官方迁移文档、源码反射入口和本项目实际调用路径"
+  - "SDK 反射规则优先从 Class.forName、ServiceLoader、注解扫描、Gson/serialization/Retrofit 泛型入口反推，不凭包名整体保留"
+  - "无法继续时输出阻塞结论：已验证项、未解项、风险、需要谁提供什么资料"
 
-## Action
-
-- 先锁定依赖坐标和版本，优先查 `gradle/libs.versions.toml`，再对照模块 `build.gradle.kts`
-- 优先在 `~/.gradle/caches/modules-2/files-2.1/` 查对应版本的 `-sources.jar`
-- `.gradle` 找不到源码时，先完成 Gradle Sync 或构建拉取依赖；仍缺失再查官方文档、官方源码仓库、Maven/Google Maven 元数据，必要时用 Context7 补官方 API 说明
-- 无法继续时输出阻塞结论：已验证项、未解项、风险、需要谁提供什么资料
-
-## Forbidden
-
-- 禁止在依赖版本未确认时基于经验推断 SDK 行为
-- 禁止将反编译结果当作权威结论
-- 禁止在阻塞时不记录已尝试路径和失败原因
+forbidden:
+  - "禁止在依赖版本未确认时基于经验推断 SDK 行为"
+  - "禁止将反编译结果当作权威结论"
+  - "禁止直接复制外部 skill 的 alpha/beta 依赖版本到项目中，除非用户明确接受并完成本地构建验证"
+  - "禁止为敏感或破坏性系统/agent 能力提供无确认、无审计、无服务端校验的执行入口"
+  - "禁止在阻塞时不记录已尝试路径和失败原因"

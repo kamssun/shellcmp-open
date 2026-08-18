@@ -18,13 +18,14 @@ readonly DEVICE_SCREENSHOT_DIR="/sdcard/archshowcase"
 readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 readonly COMPARE_JAR="${SCRIPT_DIR}/screenshot-compare/build/libs/screenshot-compare.jar"
 readonly PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+readonly GRADLEW="${VF_GRADLEW:-${PROJECT_ROOT}/gradlew}"
 # 全局默认 mask：状态栏(top 100px) + 导航条(bottom 80px)，1080x2316 基准
 readonly DEFAULT_MASK="0,0,1080,100;0,2236,1080,80"
 
 # ─── 自动构建 screenshot-compare.jar ──────────────────────
 if [[ ! -f "$COMPARE_JAR" ]]; then
     echo "screenshot-compare.jar not found, building..."
-    if "${PROJECT_ROOT}/gradlew" -p "$PROJECT_ROOT" :tools:verify:screenshot-compare:jar -q; then
+    if "$GRADLEW" -p "$PROJECT_ROOT" :tools:verify:screenshot-compare:jar -q; then
         echo "Build successful."
     else
         echo "ERROR: Failed to build screenshot-compare.jar" >&2
@@ -94,6 +95,21 @@ preflight() {
         echo "Error: device not connected" >&2
         exit 2
     fi
+    if ! adb_cmd shell pm path "$PACKAGE" > /dev/null 2>&1; then
+        echo "  $PACKAGE not installed, running :androidApp:installDebug..."
+        if ! "$GRADLEW" -p "$PROJECT_ROOT" :androidApp:installDebug; then
+            echo "Error: failed to install $PACKAGE debug APK" >&2
+            exit 2
+        fi
+        if ! adb_cmd shell pm path "$PACKAGE" > /dev/null 2>&1; then
+            echo "Error: $PACKAGE is still not installed after installDebug" >&2
+            exit 2
+        fi
+    fi
+    if ! adb_cmd shell cmd package resolve-activity --brief "$PACKAGE/.MainActivity" | grep -q "$PACKAGE/.MainActivity"; then
+        echo "Error: $PACKAGE/.MainActivity cannot be resolved on device" >&2
+        exit 2
+    fi
     local display_state
     display_state=$(adb_cmd shell "dumpsys power | grep 'Display Power'" 2>/dev/null)
     if echo "$display_state" | grep -qi "OFF"; then
@@ -112,7 +128,10 @@ preflight() {
         return
     fi
     echo "  Bringing $PACKAGE to foreground..."
-    adb_cmd shell am start -n "$PACKAGE/.MainActivity" > /dev/null 2>&1
+    if ! adb_cmd shell am start -n "$PACKAGE/.MainActivity" > /dev/null 2>&1; then
+        echo "Error: failed to start $PACKAGE/.MainActivity" >&2
+        exit 2
+    fi
     sleep 3
 }
 
@@ -166,15 +185,24 @@ _verify_one() {
     local output_dir="${vf_dir}/output"
     mkdir -p "$output_dir"
 
-    # 0. 状态隔离：start.tte 为空时 force-stop 回到干净 Home
+    # 0. 状态隔离：每个 case 都从干净 App 数据启动，避免录制残留污染仓库状态。
+    echo "[0] Resetting app data for isolated replay..."
+    if ! adb_cmd shell pm clear "$PACKAGE" > /dev/null 2>&1; then
+        echo "Error: failed to clear app data for $PACKAGE" >&2
+        return 2
+    fi
+    sleep 1
+    if ! adb_cmd shell am start -n "$PACKAGE/.MainActivity" > /dev/null 2>&1; then
+        echo "Error: failed to start $PACKAGE/.MainActivity" >&2
+        return 2
+    fi
+    sleep 3
+
+    # start.tte 为空时保持 Home 初始态；非空时由 VERIFY_INIT 恢复录制态。
     local start_tte_size
     start_tte_size=$(wc -c < "$vf_dir/start.tte" 2>/dev/null || echo "0")
     if [[ "$start_tte_size" -eq 0 ]]; then
-        echo "[0] Empty start.tte, restarting app for clean Home state..."
-        adb_cmd shell am force-stop "$PACKAGE" > /dev/null 2>&1
-        sleep 1
-        adb_cmd shell am start -n "$PACKAGE/.MainActivity" > /dev/null 2>&1
-        sleep 3
+        echo "  Empty start.tte, using clean Home state."
     fi
 
     # 1. Push VF

@@ -14,6 +14,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.example.archshowcase.i18n.tr
 import com.example.archshowcase.presentation.chat.list.ConversationListContent
@@ -25,7 +26,11 @@ fun MainContent(component: MainComponent) {
     val state by component.state.collectAsState()
     val selectedChild = component.tabs.getOrNull(state.selectedIndex)
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .testTag(MainTestTags.MAIN_CONTENT)
+    ) {
         Box(modifier = Modifier.weight(1f)) {
             when (selectedChild) {
                 is MainComponent.TabChild.Chat ->

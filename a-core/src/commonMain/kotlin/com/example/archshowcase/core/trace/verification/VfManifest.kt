@@ -19,6 +19,8 @@ data class VfManifest(
     val createdAt: String = "",
     @SerialName("tte_format")
     val tteFormat: String = "ttr",
+    @SerialName("wait_after_init_ms")
+    val waitAfterInitMs: Long = 0,
 
     val intents: List<VfIntent> = emptyList(),
 

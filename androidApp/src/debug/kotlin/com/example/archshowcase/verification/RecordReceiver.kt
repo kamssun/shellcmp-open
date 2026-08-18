@@ -44,9 +44,12 @@ class RecordReceiver : BroadcastReceiver() {
                 Log.e(TAG, "VF_RECORD_START: component destroyed during settle delay")
                 return@postDelayed
             }
-            val screenshot = ScreenshotCapture.capture()
-            component.onExportVfStart(screenshot)
-            Log.i(TAG, "VF_RECORD_READY")
+            ScreenshotCapture.prepareForCapture()
+            ReceiverHelper.mainHandler.postDelayed({
+                val screenshot = ScreenshotCapture.capture()
+                component.onExportVfStart(screenshot)
+                Log.i(TAG, "VF_RECORD_READY")
+            }, KEYBOARD_SETTLE_DELAY_MS)
         }, SETTLE_DELAY_MS)
     }
 
@@ -64,32 +67,36 @@ class RecordReceiver : BroadcastReceiver() {
                 Log.e(TAG, "VF_RECORD_END: component destroyed during settle delay")
                 return@postDelayed
             }
-            val screenshot = ScreenshotCapture.capture()
-            val vfFiles = component.onExportVfEnd(verificationText, screenshot)
+            ScreenshotCapture.prepareForCapture()
+            ReceiverHelper.mainHandler.postDelayed({
+                val screenshot = ScreenshotCapture.capture()
+                val vfFiles = component.onExportVfEnd(verificationText, screenshot)
 
-            if (vfFiles == null) {
-                Log.e(TAG, "VF_RECORD_END: export returned null (not in recording state?)")
-                return@postDelayed
-            }
+                if (vfFiles == null) {
+                    Log.e(TAG, "VF_RECORD_END: export returned null (not in recording state?)")
+                    return@postDelayed
+                }
 
-            val timestamp = System.currentTimeMillis()
-            val vfDir = File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                "vf/vf_$timestamp"
-            )
-            vfDir.mkdirs()
+                val timestamp = System.currentTimeMillis()
+                val vfDir = File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                    "vf/vf_$timestamp"
+                )
+                vfDir.mkdirs()
 
-            vfFiles.forEach { (name, bytes) ->
-                File(vfDir, name).writeBytes(bytes)
-            }
+                vfFiles.forEach { (name, bytes) ->
+                    File(vfDir, name).writeBytes(bytes)
+                }
 
-            Log.i(TAG, "VF_RECORD_DONE path=${vfDir.absolutePath}")
+                Log.i(TAG, "VF_RECORD_DONE path=${vfDir.absolutePath}")
+            }, KEYBOARD_SETTLE_DELAY_MS)
         }, SETTLE_DELAY_MS)
     }
 
     companion object {
         private const val TAG = "RecordReceiver"
         private const val SETTLE_DELAY_MS = 300L
+        private const val KEYBOARD_SETTLE_DELAY_MS = 3000L
         const val ACTION_START = "com.example.archshowcase.VF_RECORD_START"
         const val ACTION_END = "com.example.archshowcase.VF_RECORD_END"
     }

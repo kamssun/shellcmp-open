@@ -15,6 +15,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.archshowcase.i18n.tr
@@ -67,6 +68,7 @@ fun EmailLoginContent(component: EmailLoginComponent) {
                 value = email,
                 onValueChange = { email = it },
                 modifier = Modifier.fillMaxWidth(),
+                automationTag = LoginTestTags.EMAIL_FIELD,
                 enabled = !state.isLoading,
                 label = tr(Res.string.label_email),
                 singleLine = true
@@ -77,7 +79,9 @@ fun EmailLoginContent(component: EmailLoginComponent) {
             AppButton(
                 onClick = { component.onSendCode(email.trim()) },
                 enabled = !state.isLoading,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(LoginTestTags.SEND_CODE_BUTTON)
             ) {
                 AppText(if (state.emailCodeSent) tr(Res.string.btn_resend_code) else tr(Res.string.btn_send_code))
             }
@@ -89,6 +93,7 @@ fun EmailLoginContent(component: EmailLoginComponent) {
                     value = code,
                     onValueChange = { code = it },
                     modifier = Modifier.fillMaxWidth(),
+                    automationTag = LoginTestTags.CODE_FIELD,
                     enabled = !state.isLoading,
                     label = tr(Res.string.label_verification_code),
                     singleLine = true
@@ -99,7 +104,9 @@ fun EmailLoginContent(component: EmailLoginComponent) {
                 AppButton(
                     onClick = { component.onVerifyCode(email.trim(), code.trim()) },
                     enabled = !state.isLoading,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(LoginTestTags.VERIFY_LOGIN_BUTTON)
                 ) {
                     AppText(tr(Res.string.btn_verify_login))
                 }

@@ -1,6 +1,7 @@
 package com.example.archshowcase
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.archshowcase.presentation.preview.PreviewWrapper
 import com.example.archshowcase.presentation.root.DefaultRootComponent
@@ -15,5 +16,6 @@ fun MainView(root: RootComponent) {
 @Preview
 @Composable
 fun MainViewPreview() = PreviewWrapper { componentContext ->
-    MainView(DefaultRootComponent(componentContext))
+    val component = remember { DefaultRootComponent(componentContext) }
+    MainView(component)
 }

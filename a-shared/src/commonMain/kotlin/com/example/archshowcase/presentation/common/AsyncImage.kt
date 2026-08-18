@@ -6,10 +6,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
-import com.example.archshowcase.presentation.theme.AppTheme
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import coil3.size.Precision
+import com.example.archshowcase.presentation.theme.AppTheme
 import coil3.compose.AsyncImage as CoilAsyncImage
 
 /**

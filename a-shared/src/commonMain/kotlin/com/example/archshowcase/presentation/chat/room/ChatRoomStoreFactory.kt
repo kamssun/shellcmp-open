@@ -51,27 +51,36 @@ class ChatRoomStoreFactory : KoinComponent {
         /** 用户在 Latest 模式下看到的最新消息位置，离开底部后冻结 */
         @Volatile
         private var newestSeen = SeenPosition(0L, "")
+        private var observersStarted = false
 
         private fun now() = Clock.System.now().toEpochMilliseconds()
 
         override fun executeIntent(intent: Intent) {
             when (intent) {
                 is Intent.Init -> init()
-                is Intent.SendText -> sendMessage(MessageBody.Text(intent.text))
+                is Intent.SendText -> submitMessage(
+                    body = MessageBody.Text(intent.text),
+                    historyType = ChatRoomHistoryType.SendText(intent.text)
+                )
                 is Intent.SendImage -> {
                     val url = intent.url.ifEmpty {
                         "https://picsum.photos/seed/img_${now()}/${intent.width}/${intent.height}"
                     }
-                    sendMessage(MessageBody.Image(url, intent.width, intent.height, intent.isGif))
+                    submitMessage(
+                        body = MessageBody.Image(url, intent.width, intent.height, intent.isGif),
+                        historyType = ChatRoomHistoryType.SendImage(url, intent.width, intent.height, intent.isGif)
+                    )
                 }
-                is Intent.SendSticker -> sendMessage(
-                    MessageBody.Sticker(intent.stickerId, intent.url)
+                is Intent.SendSticker -> submitMessage(
+                    body = MessageBody.Sticker(intent.stickerId, intent.url),
+                    historyType = ChatRoomHistoryType.SendSticker(intent.stickerId, intent.url)
                 )
                 is Intent.SendVoice -> {
                     val duration = if (intent.durationMs > 0) intent.durationMs
                         else Random.nextInt(3, 30) * 1000
-                    sendMessage(
-                        MessageBody.Voice("mock://voice/${now()}", duration)
+                    submitMessage(
+                        body = MessageBody.Voice("mock://voice/${now()}", duration),
+                        historyType = ChatRoomHistoryType.SendVoice(duration)
                     )
                 }
                 is Intent.MoveWindow -> {
@@ -94,8 +103,19 @@ class ChatRoomStoreFactory : KoinComponent {
                     val next = if (current == InputMode.TEXT) InputMode.VOICE else InputMode.TEXT
                     dispatch(Msg.InputModeChanged(next, now()))
                 }
-                is Intent.ToggleEmojiPanel -> dispatch(Msg.EmojiPanelToggled(!state().showEmojiPanel, now()))
-                is Intent.TogglePlusPanel -> dispatch(Msg.PlusPanelToggled(!state().showPlusPanel, now()))
+                is Intent.ToggleEmojiPanel -> dispatch(
+                    Msg.ComposerPanelSet(
+                        if (state().showEmojiPanel) ComposerPanel.None else ComposerPanel.Emoji,
+                        now()
+                    )
+                )
+                is Intent.TogglePlusPanel -> dispatch(
+                    Msg.ComposerPanelSet(
+                        if (state().showPlusPanel) ComposerPanel.None else ComposerPanel.Plus,
+                        now()
+                    )
+                )
+                is Intent.SetComposerPanel -> dispatch(Msg.ComposerPanelSet(intent.panel, now()))
                 is Intent.LeaveConversation -> repo.onLeaveConversation()
                 is Intent.UpdateScrollPosition -> {
                     val position = ScrollPosition(intent.firstVisibleIndex, intent.offset)
@@ -105,12 +125,15 @@ class ChatRoomStoreFactory : KoinComponent {
         }
 
         private fun init() {
-            if (state().conversationId.isNotEmpty()) return // restored state, skip init
-            val name = repo.getConversationName(conversationId) ?: ""
-            val count = repo.getMemberCount(conversationId)
-            dispatch(Msg.Initialized(conversationId, name, count, now()))
+            if (state().conversationId.isEmpty()) {
+                val name = repo.getConversationName(conversationId) ?: ""
+                val count = repo.getMemberCount(conversationId)
+                dispatch(Msg.Initialized(conversationId, name, count, now()))
+            }
 
             repo.markRead(conversationId)
+            if (observersStarted) return
+            observersStarted = true
 
             scope.oboLaunch(OBO_TAG) {
                 repo.observeMessages(conversationId, anchorFlow).collectLatest { window ->
@@ -130,10 +153,10 @@ class ChatRoomStoreFactory : KoinComponent {
             }
         }
 
-        private fun sendMessage(body: MessageBody) {
+        private fun submitMessage(body: MessageBody, historyType: ChatRoomHistoryType) {
+            dispatch(Msg.MessageSubmitted(historyType, now()))
             // Close panels on send + reset anchor to Latest
-            dispatch(Msg.EmojiPanelToggled(false, now()))
-            dispatch(Msg.PlusPanelToggled(false, now()))
+            dispatch(Msg.ComposerPanelSet(ComposerPanel.None, now()))
             anchorFlow.value = WindowAnchor.Latest
             publish(Label.ScrollToLatest)
             scope.oboLaunch(OBO_TAG) {
@@ -204,16 +227,16 @@ class ChatRoomStoreFactory : KoinComponent {
                 )
                 record.applyToState(this)
             }
-            is Msg.EmojiPanelToggled -> {
+            is Msg.MessageSubmitted -> {
                 val record = ChatRoomHistoryRecord(
-                    type = ChatRoomHistoryType.ToggleEmojiPanel(msg.show),
+                    type = msg.type,
                     timestamp = msg.timestamp
                 )
                 record.applyToState(this)
             }
-            is Msg.PlusPanelToggled -> {
+            is Msg.ComposerPanelSet -> {
                 val record = ChatRoomHistoryRecord(
-                    type = ChatRoomHistoryType.TogglePlusPanel(msg.show),
+                    type = ChatRoomHistoryType.SetComposerPanel(msg.panel),
                     timestamp = msg.timestamp
                 )
                 record.applyToState(this)

@@ -21,7 +21,7 @@ KMP 项目 (Android + iOS + Desktop)，Compose Multiplatform 共享 UI。
         ├── perf/       性能监控（启动时间线 / 卡顿诊断 / 页面帧统计 / FrameMetrics / GC 压力检测）
         └── trace/      状态回溯 / 导出 / 泄漏审计 / 滚动恢复 / SSIM 截图验证
   └── build-plugin（Gradle 构建插件，ASM 字节码改写三方 SDK Handler 调用）
-  └── macrobenchmark（Baseline Profile 生成 + 启动基准测试）
+  └── macrobenchmark（Baseline/Startup Profile 生成 + 启动基准测试）
   └── tools/verify（VF AI 全自动截图回归：变更分析 → 路径推断 → adb 录制 → SSIM 验证）
 ```
 
@@ -35,8 +35,10 @@ KMP 项目 (Android + iOS + Desktop)，Compose Multiplatform 共享 UI。
 ./gradlew koverVerify                            # 覆盖率 ≥80%
 ./gradlew :androidApp:assembleDebug              # 构建 Android
 ./gradlew :androidApp:verifyRoborazziDebug       # Preview 截图对比（JVM，无需设备）
-tools/verify/verify-vf.sh                        # VF 端到端截图回归（真机，全量）
-tools/verify/verify-vf.sh <name>                 # VF 端到端截图回归（真机，指定）
+./gradlew verifyReleasePerformanceConfig         # Release R8/Profile 静态门禁
+./gradlew verifyReleasePerformance               # Release R8/Profile 完整门禁
+tools/verify/run_verification.sh tools/verify/test-vfs/        # VF 端到端截图回归（真机，全量）
+tools/verify/run_verification.sh tools/verify/test-vfs/<path>  # VF 端到端截图回归（真机，指定）
 ```
 
 ## 规范（渐进式加载）
@@ -60,13 +62,13 @@ tools/verify/verify-vf.sh <name>                 # VF 端到端截图回归（�
 | 改 App* 自定义组件 | `custom-components.yaml` |
 | 改 DI / Koin | `koin-di.yaml` |
 | 改路由 | `route.yaml` |
-| 改列表/性能/Baseline Profile | `performance.yaml` |
+| 改列表/性能/Baseline/Startup Profile/R8 | `performance.yaml` |
 | 写测试 | `testing.yaml` |
 | 改状态回溯 | `time-travel.yaml` |
 | 重构/代码风格 | `code-patterns.yaml` |
 | 改网络拦截器 | `network-interceptor.yaml` |
 | 分析 SDK | `sdk-source-analysis.yaml` |
-| 创建/改 command/skill/agent | `command-skill-agent.yaml` |
+| 创建/改 command/skill/agent/instinct | `command-skill-agent.yaml` |
 | 代码审查 | `code-review.yaml` |
 | 提交代码 | `commit-convention.yaml` |
 | 排查运行时问题 | `debugging.yaml` |
@@ -90,7 +92,7 @@ tools/verify/verify-vf.sh <name>                 # VF 端到端截图回归（�
 | `docs/CROSS_PLATFORM_ANALYSIS.md` | 跨端方案选型论据 |
 | `docs/PERF_MONITOR.md` | 运行时性能监控（PERF 日志体系 + Compose 帧渲染模型 + 排查流程） |
 | `tools/btrace/README.md` | btrace 性能追踪 + trace 反混淆 + `/analyze-trace` AI 分析 |
-| `macrobenchmark/README.md` | Baseline Profile 生成 + 启动基准测试 |
+| `macrobenchmark/README.md` | Baseline/Startup Profile 生成 + 启动基准测试 |
 | `tools/verify/README.md` | VF 截图回归（录制 + 验证 + SSIM 引擎） |
 | `docs/vf-recording-guide.md` | VF 录制 Agent 领域知识（Phase 1-3 规则） |
 | `docs/OBO_HANDLER_INTERCEPT.md` | OBO Handler 拦截机制（ASM 改写原理 + 黑名单 + 报告查看） |
@@ -99,7 +101,7 @@ tools/verify/verify-vf.sh <name>                 # VF 端到端截图回归（�
 
 ## 文档维护原则
 
-所有文档（CLAUDE.md、instincts、docs/、MEMORY.md）遵循两条总纲：
+所有文档（AGENTS.md、CLAUDE.md、instincts、docs/、MEMORY.md）遵循两条总纲：
 
 ### 极简
 
@@ -114,7 +116,7 @@ tools/verify/verify-vf.sh <name>                 # VF 端到端截图回归（�
 
 | 层 | 载体 | 加载时机 | 内容要求 |
 |----|------|----------|----------|
-| L0 | `CLAUDE.md` | 每次对话自动加载 | 架构心智模型 + 规范索引，不超过 200 行 |
+| L0 | `AGENTS.md` / `CLAUDE.md` | 每次对话自动加载 | 架构心智模型 + 规范索引，不超过 200 行 |
 | L1 | 通用 instincts | 每次写代码前 | 所有改动都必须遵守的规则 |
 | L2 | 领域 instincts | 碰到相关代码时 | 特定领域的规则，按 trigger 字段匹配 |
 | L3 | `docs/` | 需要理解全貌时 | 架构图谱、深度设计文档 |
@@ -122,17 +124,10 @@ tools/verify/verify-vf.sh <name>                 # VF 端到端截图回归（�
 **维护规则：**
 
 - L0 只放索引和心智模型，细节下沉到 L1-L3
+- `AGENTS.md` 与 `CLAUDE.md` 是同级 L0 入口文档；修改任一文件中的架构心智模型、常用命令、规范索引、文档维护原则时，必须同步另一份
+- 仅允许工具专属差异；如确需差异，必须在两份文件中明确说明原因
 - L1/L2 每个文件聚焦单一领域，不交叉引用
 - L3 文档可以详尽，但入口（L0）必须说明何时该读
 - 新增规范先确定层级，再选择放置位置
 - `MEMORY.md` 是草稿本，稳定知识应提炼到 yaml/docs 后从 MEMORY.md 移除
 - 提炼标准：经多次会话验证、不再变化的模式或踩坑记录
-
-## graphify
-
-This project has a graphify knowledge graph at graphify-out/.
-
-Rules:
-- Before answering architecture or codebase questions, read graphify-out/GRAPH_REPORT.md for god nodes and community structure
-- If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
-- After modifying code files in this session, run `python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"` to keep the graph current

@@ -187,11 +187,14 @@ maestro test .maestro/flows/ -e APP_ID=com.example.archshowcase
 maestro test .maestro/flows/ --udid &lt;device-udid&gt;</pre>
 
       <h3>Performance Benchmarks</h3>
-      <pre><span class="comment"># Generate Baseline Profile (requires connected device API 28+)</span>
-./gradlew :androidApp:generateBaselineProfile
+      <pre><span class="comment"># Generate Release Baseline/Startup Profile (requires a connected physical device)</span>
+./gradlew :androidApp:generateReleaseBaselineProfile
 
 <span class="comment"># Startup benchmark test</span>
-./gradlew :macrobenchmark:connectedBenchmarkAndroidTest</pre>
+./gradlew :macrobenchmark:connectedBenchmarkReleaseAndroidTest
+
+<span class="comment"># Full Release R8/Profile gate</span>
+./gradlew verifyReleasePerformance</pre>
     </div>
 
     <div class="doc-footer-nav">

@@ -1,5 +1,23 @@
 # 测试命令
 
+## 完整验证流程
+
+用户要求“完整跑验证”时按顺序执行，前一步失败则停止：
+
+| 顺序 | 命令 | 说明 |
+|------|------|------|
+| 1 | `./gradlew :a-core:allTests :a-platform:allTests :a-shared:allTests --rerun-tasks` | 强制重跑 KMP/模块测试，避免缓存掩盖失败 |
+| 2 | `./gradlew koverVerify koverLog` | 覆盖率门禁 + 摘要 |
+| 3 | `./gradlew :androidApp:assembleDebug` | Debug 构建 |
+| 4 | `./gradlew :androidApp:verifyRoborazziDebug --rerun-tasks` | UI/Preview 改动时强制重跑截图对比 |
+| 5 | `./gradlew :androidApp:lintDebug` | Lint |
+| 6 | `./gradlew :androidApp:connectedAndroidTest` | 真机/模拟器 Instrumented 测试 |
+| 7 | `./gradlew verifyVf` | 真机 VF 截图回归；脚本会在缺少 Debug App 时自动 `installDebug` |
+| 8 | `./gradlew verifyReleasePerformanceConfig` | Release 性能静态门禁 |
+| 9 | `./gradlew verifyReleasePerformance` | Release 完整性能门禁 |
+
+`generateReleaseBaselineProfile` 和 `connectedBenchmarkReleaseAndroidTest` 需要真实登录/基准场景，仅在明确要求或发版基准更新时执行。
+
 ## 单元测试
 
 | 命令 | 说明 |
@@ -34,6 +52,17 @@
 | 命令 | 说明 |
 |------|------|
 | `./gradlew :androidApp:connectedAndroidTest` | Android Instrumented 测试 (需设备) |
+
+## 性能门禁 / Macrobenchmark
+
+| 命令 | 说明 |
+|------|------|
+| `./gradlew :androidApp:generateReleaseBaselineProfile` | 生成 Release Baseline/Startup Profile；任务启动后需在真机完成真实登录 |
+| `./gradlew :macrobenchmark:connectedBenchmarkReleaseAndroidTest` | 启动基准测试，对比 NoCompilation 与 BaselineProfile 冷启动 |
+| `./gradlew verifyReleasePerformanceConfig` | Release R8/Profile 静态门禁 |
+| `./gradlew verifyReleasePerformance` | Release R8/Profile 完整门禁，检查 release APK/AAB、`.dm` 和 R8 metadata |
+
+详见 `macrobenchmark/README.md`
 
 ## VF 截图回归
 

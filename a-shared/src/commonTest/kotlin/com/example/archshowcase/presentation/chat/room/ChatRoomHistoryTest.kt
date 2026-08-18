@@ -53,7 +53,8 @@ class ChatRoomHistoryTest {
             timestamp = 1710000001000
         )
         val json = Json.encodeToString(record)
-        assertTrue(json.toByteArray().size < 250, "Serialized size=${json.toByteArray().size} should be <250 bytes")
+        val byteSize = json.encodeToByteArray().size
+        assertTrue(byteSize < 250, "Serialized size=$byteSize should be <250 bytes")
     }
 
     @Test
@@ -219,12 +220,25 @@ class ChatRoomHistoryTest {
     }
 
     @Test
-    fun `ToggleEmojiPanel toIntent returns ToggleEmojiPanel`() {
+    fun `ToggleEmojiPanel toIntent returns SetComposerPanel Emoji when shown`() {
         val record = ChatRoomHistoryRecord(
             type = ChatRoomHistoryType.ToggleEmojiPanel(true),
             timestamp = 100
         )
-        assertIs<ChatRoomStore.Intent.ToggleEmojiPanel>(record.toIntent())
+        val intent = record.toIntent()
+        assertIs<ChatRoomStore.Intent.SetComposerPanel>(intent)
+        assertEquals(ComposerPanel.Emoji, intent.panel)
+    }
+
+    @Test
+    fun `ToggleEmojiPanel toIntent returns SetComposerPanel None when hidden`() {
+        val record = ChatRoomHistoryRecord(
+            type = ChatRoomHistoryType.ToggleEmojiPanel(false),
+            timestamp = 100
+        )
+        val intent = record.toIntent()
+        assertIs<ChatRoomStore.Intent.SetComposerPanel>(intent)
+        assertEquals(ComposerPanel.None, intent.panel)
     }
 
     // ── TogglePlusPanel ──
@@ -244,12 +258,79 @@ class ChatRoomHistoryTest {
     }
 
     @Test
-    fun `TogglePlusPanel toIntent returns TogglePlusPanel`() {
+    fun `TogglePlusPanel toIntent returns SetComposerPanel Plus when shown`() {
         val record = ChatRoomHistoryRecord(
             type = ChatRoomHistoryType.TogglePlusPanel(true),
             timestamp = 100
         )
-        assertIs<ChatRoomStore.Intent.TogglePlusPanel>(record.toIntent())
+        val intent = record.toIntent()
+        assertIs<ChatRoomStore.Intent.SetComposerPanel>(intent)
+        assertEquals(ComposerPanel.Plus, intent.panel)
+    }
+
+    @Test
+    fun `TogglePlusPanel toIntent returns SetComposerPanel None when hidden`() {
+        val record = ChatRoomHistoryRecord(
+            type = ChatRoomHistoryType.TogglePlusPanel(false),
+            timestamp = 100
+        )
+        val intent = record.toIntent()
+        assertIs<ChatRoomStore.Intent.SetComposerPanel>(intent)
+        assertEquals(ComposerPanel.None, intent.panel)
+    }
+
+    // ── SetComposerPanel ──
+
+    @Test
+    fun `SetComposerPanel applyToState sets exact panel`() {
+        val prevState = baseState.copy(showEmojiPanel = true, showPlusPanel = false)
+        val record = ChatRoomHistoryRecord(
+            type = ChatRoomHistoryType.SetComposerPanel(ComposerPanel.Plus),
+            timestamp = 100
+        )
+
+        val newState = record.applyToState(prevState)
+
+        assertFalse(newState.showEmojiPanel)
+        assertTrue(newState.showPlusPanel)
+    }
+
+    @Test
+    fun `SetComposerPanel toIntent returns SetComposerPanel`() {
+        val record = ChatRoomHistoryRecord(
+            type = ChatRoomHistoryType.SetComposerPanel(ComposerPanel.None),
+            timestamp = 100
+        )
+        val intent = record.toIntent()
+        assertIs<ChatRoomStore.Intent.SetComposerPanel>(intent)
+        assertEquals(ComposerPanel.None, intent.panel)
+    }
+
+    // ── Send messages ──
+
+    @Test
+    fun `SendText toIntent returns SendText`() {
+        val record = ChatRoomHistoryRecord(
+            type = ChatRoomHistoryType.SendText("hello"),
+            timestamp = 100
+        )
+        val intent = record.toIntent()
+        assertIs<ChatRoomStore.Intent.SendText>(intent)
+        assertEquals("hello", intent.text)
+    }
+
+    @Test
+    fun `SendImage toIntent returns SendImage with recorded url`() {
+        val record = ChatRoomHistoryRecord(
+            type = ChatRoomHistoryType.SendImage("https://picsum.photos/seed/fixed/400/300", 400, 300, false),
+            timestamp = 100
+        )
+        val intent = record.toIntent()
+        assertIs<ChatRoomStore.Intent.SendImage>(intent)
+        assertEquals("https://picsum.photos/seed/fixed/400/300", intent.url)
+        assertEquals(400, intent.width)
+        assertEquals(300, intent.height)
+        assertFalse(intent.isGif)
     }
 
 }

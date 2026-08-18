@@ -1036,7 +1036,7 @@ input[type=range] {
       </tr>
       <tr>
         <td class="mono">macrobenchmark</td>
-        <td class="desc">Baseline Profile generation + startup benchmark (Android)</td>
+        <td class="desc">Baseline/Startup Profile generation + startup benchmark (Android)</td>
       </tr>
       <tr>
         <td class="mono">tools/btrace</td>
@@ -1068,8 +1068,8 @@ input[type=range] {
       <pre><span class="comment"># Build Debug APK</span>
 <span class="cmd">./gradlew</span> :androidApp:assembleDebug
 
-<span class="comment"># Generate Baseline Profile</span>
-<span class="cmd">./gradlew</span> :androidApp:generateBaselineProfile</pre>
+<span class="comment"># Generate Release Baseline/Startup Profile</span>
+<span class="cmd">./gradlew</span> :androidApp:generateReleaseBaselineProfile</pre>
     </div>
     <div class="build-card">
       <div class="build-card-header">
@@ -1097,7 +1097,7 @@ input[type=range] {
 <span class="cmd">open</span> iosApp/iosApp.xcworkspace
 
 <span class="comment"># Run benchmark test</span>
-<span class="cmd">./gradlew</span> :macrobenchmark:connectedBenchmarkAndroidTest</pre>
+<span class="cmd">./gradlew</span> :macrobenchmark:connectedBenchmarkReleaseAndroidTest</pre>
     </div>
   </div>
 </section>

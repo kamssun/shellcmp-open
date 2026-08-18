@@ -24,6 +24,7 @@ import com.example.archshowcase.i18n.StringProvider
 import com.example.archshowcase.presentation.theme.AppTheme
 import org.koin.compose.KoinApplication
 import org.koin.compose.koinInject
+import org.koin.dsl.koinConfiguration
 
 /** Preview 用的空 Navigator */
 private object PreviewNavigator : Navigator {
@@ -45,6 +46,14 @@ fun PreviewWrapper(
     remember {
         AppRuntimeState.isInPreview = true
     }
+    val imagePreviewHandler =
+        if (AppRuntimeState.previewRenderImages) {
+            AsyncImagePreviewHandler.Default
+        } else {
+            AsyncImagePreviewHandler {
+                ColorImage(0xFFE0E0E0.toInt())
+            }
+        }
     val platformModule = createPreviewPlatformModule()
     val appContext = remember {
         DefaultAppComponentContext(
@@ -53,15 +62,15 @@ fun PreviewWrapper(
         )
     }
 
-    KoinApplication(application = {
-        modules(getAppModules(platformModule))
-    }) {
+    KoinApplication(
+        configuration = koinConfiguration {
+            modules(getAppModules(platformModule))
+        }
+    ) {
         CompositionLocalProvider(
             LocalStringProvider provides koinInject<StringProvider>(),
             LocalInspectionMode provides true,
-            LocalAsyncImagePreviewHandler provides AsyncImagePreviewHandler {
-                ColorImage(0xFFE0E0E0.toInt())
-            },
+            LocalAsyncImagePreviewHandler provides imagePreviewHandler,
         ) {
             AppTheme {
                 Box(modifier = Modifier.background(AppTheme.colors.background)) {

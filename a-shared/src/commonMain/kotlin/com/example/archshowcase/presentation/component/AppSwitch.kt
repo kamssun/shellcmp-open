@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.archshowcase.core.analytics.appClickable
 import com.example.archshowcase.core.analytics.model.GestureType
+import com.example.archshowcase.presentation.preview.PreviewWrapper
 import com.example.archshowcase.presentation.theme.AppTheme
 
 /** 替代 Material3 Switch，Canvas 自绘 */
@@ -72,6 +73,6 @@ fun AppSwitch(
 
 @Preview
 @Composable
-fun AppSwitchPreview() = AppTheme {
+fun AppSwitchPreview() = PreviewWrapper { _ ->
     AppSwitch(checked = true, onCheckedChange = {})
 }

@@ -27,9 +27,13 @@ class StartupBenchmark {
             compilationMode = compilationMode,
             startupMode = StartupMode.COLD,
             iterations = 5,
+            setupBlock = {
+                RealLoginPreparer.prepare(this)
+                killProcess()
+            },
         ) {
-            pressHome()
             startActivityAndWait()
+            RealLoginPreparer.requireMainScreen()
         }
     }
 }

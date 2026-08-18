@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,14 +23,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.archshowcase.chat.model.ChatMessage
 import com.example.archshowcase.chat.model.MessageBody
 import com.example.archshowcase.chat.model.SendStatus
 import com.example.archshowcase.presentation.common.AsyncImage
 import com.example.archshowcase.presentation.component.AppText
-import androidx.compose.ui.tooling.preview.Preview
 import com.example.archshowcase.i18n.tr
+import com.example.archshowcase.presentation.preview.PreviewWrapper
 import com.example.archshowcase.presentation.theme.AppTheme
 import com.example.archshowcase.resources.Res
 import com.example.archshowcase.resources.chat_recall_other
@@ -257,24 +257,24 @@ private fun FailedIndicator(onClick: () -> Unit) {
     }
 }
 
-@Preview
+@Preview(name = "Message Bubble", widthDp = 360, heightDp = 140)
 @Composable
 private fun MessageBubblePreview() {
-    AppTheme {
+    PreviewWrapper { _ ->
         MessageBubble(
             message = ChatMessage(
                 id = "preview_1",
-                conversationId = "conv_1",
+                conversationId = "preview_conv",
                 senderId = "user_1",
                 senderName = "张三",
                 senderAvatar = null,
                 body = MessageBody.Text("你好，这是一条预览消息"),
                 timestamp = 0L,
                 isMine = false,
-                status = SendStatus.SENT
+                status = SendStatus.SENT,
             ),
             onLongClick = {},
-            onResendClick = {}
+            onResendClick = {},
         )
     }
 }

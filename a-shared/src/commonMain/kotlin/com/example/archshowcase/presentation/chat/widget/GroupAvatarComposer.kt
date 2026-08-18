@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.archshowcase.presentation.common.AsyncImage
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.archshowcase.presentation.preview.PreviewWrapper
 import com.example.archshowcase.presentation.theme.AppTheme
 import kotlin.math.ceil
 import kotlin.math.sqrt
@@ -115,7 +116,7 @@ private fun GridAvatarLayout(
 @Preview
 @Composable
 private fun GroupAvatarComposerPreview() {
-    AppTheme {
+    PreviewWrapper { _ ->
         GroupAvatarComposer(
             avatars = listOf(
                 "https://picsum.photos/seed/a1/100/100",

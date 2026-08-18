@@ -1,40 +1,64 @@
----
 id: archshowcase-code-review
 trigger: "when reviewing code changes before commit"
 confidence: 1.0
 domain: code-quality
 source: project-rules
----
+title: "代码审查合规检查"
+description: "提交前对本次改动执行合规审查"
 
-# 代码审查合规检查
+action:
+  - "对本次 git diff 的改动，按核查清单逐项检查，仅审查被改动的代码"
+  - "根据改动涉及的文件，加载对应 instinct 并核查其 action + forbidden"
+  - "focus 只作为提示摘要，不能替代对应 instinct 的完整规则"
 
-> 提交前对本次改动执行合规审查
+review_method:
+  - "对本次 git diff 的改动，按核查清单逐项检查"
+  - "仅审查被改动的代码"
 
-## 审查方式
+checklist:
+  - changed_area: "所有改动"
+    instinct: "forbidden.yaml"
+  - changed_area: "Component 创建/修改"
+    instinct: "component.yaml"
+    focus: "AppComponentContext / navigator / 生命周期"
+  - changed_area: "Store / Reducer / State"
+    instinct: "mvi.yaml"
+    focus: "纯函数 / 回溯集成"
+  - changed_area: "列表 / 动画 / Effect / 性能"
+    instinct: "performance.yaml"
+    focus: "ArrayDeque / OBOLaunchedEffect / lambda modifier"
+  - changed_area: "R8 / ProGuard / minify / shrinkResources"
+    instinct: "performance.yaml"
+    focus: "keep rule 来源 / 是否可窄化 / release 或 benchmark 构建验证"
+  - changed_area: "UI / Compose"
+    instinct: "ui-compose.yaml"
+    focus: "App* 组件 / 禁 Material3 / @Preview"
+  - changed_area: "App* 自定义组件"
+    instinct: "custom-components.yaml"
+    focus: "LocalContentColor / Canvas 尺寸"
+  - changed_area: "DI / Koin"
+    instinct: "koin-di.yaml"
+    focus: "singleOf / inject 方式 / Feature Module"
+  - changed_area: "国际化字符串"
+    instinct: "i18n.yaml"
+    focus: "tr() / Res.string"
+  - changed_area: "状态回溯"
+    instinct: "time-travel.yaml"
+    focus: "registerRestorableStore / ReplayableState"
+  - changed_area: "常量 / 代码风格"
+    instinct: "code-patterns.yaml"
+    focus: "常量位置 / 命名 / guard clause"
+  - changed_area: "clickable / 曝光 / 埋点"
+    instinct: "analytics-tracking.yaml"
+    focus: "appClickable / ExposureLazyColumn / 禁裸 clickable"
+  - changed_area: "网络层"
+    instinct: "network-interceptor.yaml"
+  - changed_area: ".claude/commands / .claude/skills / .claude/agents / .claude/instincts"
+    instinct: "command-skill-agent.yaml"
+    focus: "层级归属 / 是否同步 AGENTS 与 CLAUDE / 禁止外部 skill 原文搬运"
 
-对本次 git diff 的改动，按下方核查清单逐项检查，仅审查被改动的代码
-
-## 核查清单
-
-根据改动涉及的文件，加载对应 instinct 并核查其 Action + Forbidden：
-
-| 改动涉及 | 核查 instinct |
-|----------|---------------|
-| 所有改动 | `forbidden.yaml` |
-| Component 创建/修改 | `component.yaml`（AppComponentContext / navigator / 生命周期） |
-| Store / Reducer / State | `mvi.yaml`（纯函数 / 回溯集成） |
-| 列表 / 动画 / Effect / 性能 | `performance.yaml`（ArrayDeque / OBOLaunchedEffect / lambda modifier） |
-| UI / Compose | `ui-compose.yaml`（App* 组件 / 禁 Material3 / @Preview） |
-| App* 自定义组件 | `custom-components.yaml`（LocalContentColor / Canvas 尺寸） |
-| DI / Koin | `koin-di.yaml`（singleOf / inject 方式 / Feature Module） |
-| 国际化字符串 | `i18n.yaml`（tr() / Res.string） |
-| 状态回溯 | `time-travel.yaml`（registerRestorableStore / ReplayableState） |
-| 常量 / 代码风格 | `code-patterns.yaml`（常量位置 / 命名 / guard clause） |
-| clickable / 曝光 / 埋点 | `analytics-tracking.yaml`（appClickable / ExposureLazyColumn / 禁裸 clickable） |
-| 网络层 | `network-interceptor.yaml` |
-
-## Forbidden
-
-- 禁止跳过合规审查直接提交
-- 禁止 agent 报告 CRITICAL/HIGH 问题时继续提交
-- Review 修复必须先读对应 instinct 再改，禁止以"最佳实践"为由引入违反 instincts 的改动
+forbidden:
+  - "禁止跳过合规审查直接提交"
+  - "禁止 agent 报告 CRITICAL/HIGH 问题时继续提交"
+  - "Review 修复必须先读对应 instinct 再改，禁止以“最佳实践”为由引入违反 instincts 的改动"
+  - "禁止只看 checklist.focus 摘要而不核查对应 instinct 的 action + forbidden"

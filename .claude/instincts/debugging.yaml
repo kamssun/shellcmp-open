@@ -1,27 +1,27 @@
----
 id: archshowcase-debugging
 trigger: "when fixing bugs, diagnosing crashes, analyzing performance issues, or encountering unexpected runtime behavior"
 confidence: 1.0
 domain: debugging
 source: project-rules
----
+title: "调试规范"
 
-# 调试规范
+action:
+  - "修 bug 前先加日志确认实际执行流，用日志输出定位根因后再改代码"
+  - "一个表象可能对应多个独立根因，日志要覆盖所有可疑路径"
+  - "确认修复后清除所有调试日志再提交"
+  - "Android 运行时问题优先用 adb logcat 抓取实际日志分析，不要只看代码猜"
+  - "logcat 过滤项目日志：adb logcat -s ArchShowcase 或按 tag 过滤 adb logcat | grep -E \"PERF:|ArchShowcase\""
+  - "性能问题看 [PERF:STARTUP] [PERF:JANK] [PERF:PAGE] tag，详见 docs/PERF_MONITOR.md"
+  - "OBO 调度器诊断看 OBO:SLOW（单任务超半帧 / 队列深度超 512）和 OBO:FLOOD（来源累计超 100ms/s）tag，需 AppConfig.enableOBODiagnostics = true"
+  - "崩溃问题看 AndroidRuntime tag：adb logcat -s AndroidRuntime"
+  - "需要持续监控时用 adb logcat -v time 带时间戳输出"
+  - "排查 Android UI 不可点、遮挡、布局错位时，同时抓 UI hierarchy/layout dump 和截图，避免只凭视觉猜测"
+  - "分析 Perfetto 或 btrace trace 时，先记录证据链再下结论；每个结论必须能回指到具体时间窗、线程、slice 或日志"
+  - "trace 中长耗时不等于 CPU 忙，必须结合线程状态确认是 Running、Runnable、Sleeping 还是阻塞等待"
+  - "需要写 Perfetto SQL 时先确认表/列/schema，优先用官方标准库视图，字符串匹配用 GLOB 或精确匹配"
 
-## Action
-
-- 修 bug 前先加日志确认实际执行流，用日志输出定位根因后再改代码
-- 一个表象可能对应多个独立根因，日志要覆盖所有可疑路径
-- 确认修复后清除所有调试日志再提交
-- Android 运行时问题优先用 `adb logcat` 抓取实际日志分析，不要只看代码猜
-- logcat 过滤项目日志：`adb logcat -s ArchShowcase` 或按 tag 过滤 `adb logcat | grep -E "PERF:|ArchShowcase"`
-- 性能问题看 `[PERF:STARTUP]` `[PERF:JANK]` `[PERF:PAGE]` tag，详见 `docs/PERF_MONITOR.md`
-- OBO 调度器诊断看 `OBO:SLOW`（单任务超半帧 / 队列深度超 512）和 `OBO:FLOOD`（来源累计超 100ms/s）tag，需 `AppConfig.enableOBODiagnostics = true`
-- 崩溃问题看 `AndroidRuntime` tag：`adb logcat -s AndroidRuntime`
-- 需要持续监控时用 `adb logcat -v time` 带时间戳输出
-
-## Forbidden
-
-- 禁止未经日志验证就猜测性修复
-- 禁止只看代码静态推理就下结论，必须跑起来看实际行为
-- 禁止遇到运行时问题不看 logcat 就直接改代码
+forbidden:
+  - "禁止未经日志验证就猜测性修复"
+  - "禁止只看代码静态推理就下结论，必须跑起来看实际行为"
+  - "禁止遇到运行时问题不看 logcat 就直接改代码"
+  - "禁止在 trace 分析中只找到第一个异常点就停止，至少再做一次全局慢 slice / 线程阻塞复核"

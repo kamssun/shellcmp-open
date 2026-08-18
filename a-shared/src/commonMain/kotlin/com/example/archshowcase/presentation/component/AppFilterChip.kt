@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.archshowcase.core.analytics.appClickable
 import com.example.archshowcase.core.analytics.model.GestureType
+import com.example.archshowcase.presentation.preview.PreviewWrapper
 import com.example.archshowcase.presentation.theme.AppTheme
 
 /** 替代 Material3 FilterChip */
@@ -48,6 +49,6 @@ fun AppFilterChip(
 
 @Preview
 @Composable
-fun AppFilterChipPreview() = AppTheme {
+fun AppFilterChipPreview() = PreviewWrapper { _ ->
     AppFilterChip(selected = true, onClick = {}, label = { AppText("Filter") })
 }

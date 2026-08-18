@@ -24,6 +24,7 @@ import com.example.archshowcase.core.analytics.appKeyboardActions
 import com.example.archshowcase.i18n.tr
 import com.example.archshowcase.presentation.chat.room.InputMode
 import com.example.archshowcase.presentation.component.AppText
+import com.example.archshowcase.presentation.preview.PreviewWrapper
 import com.example.archshowcase.presentation.theme.AppTheme
 import com.example.archshowcase.resources.Res
 import com.example.archshowcase.resources.chat_btn_send
@@ -169,7 +170,7 @@ fun ChatInputBar(
 @Preview
 @Composable
 private fun ChatInputBarPreview() {
-    AppTheme {
+    PreviewWrapper { _ ->
         ChatInputBar(
             inputMode = InputMode.TEXT,
             text = "",

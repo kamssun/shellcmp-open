@@ -42,7 +42,7 @@ class DefaultAuthObserverComponent(
                                 userService.fetchProfile()
                                     .onFailure { Log.w(TAG) { "fetchProfile failed: ${it.message}" } }
                             }
-                            navigator.replaceAll(Route.Home)
+                            navigator.replaceAll(loggedInLandingRoute())
                         }
                     }
                     is AuthState.LoggedOut -> {
@@ -65,3 +65,6 @@ class DefaultAuthObserverComponent(
         lifecycle.doOnDestroy { scope.cancel() }
     }
 }
+
+internal fun loggedInLandingRoute(): Route =
+    if (AppConfig.useDemoMode) Route.Home else Route.Main

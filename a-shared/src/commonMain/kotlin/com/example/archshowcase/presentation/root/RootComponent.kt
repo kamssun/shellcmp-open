@@ -110,7 +110,13 @@ class DefaultRootComponent(
         childStack(
             source = navManager.navigation,
             serializer = Route.serializer(),
-            initialConfiguration = initialRoute,
+            initialStack = {
+                resolveRootInitialStack(
+                    storeStack = navigationStore.state.stack,
+                    initialRoute = initialRoute,
+                    isRestoring = AppRuntimeState.verificationMode,
+                )
+            },
             handleBackButton = false,
             childFactory = ::createChild
         )
@@ -122,7 +128,12 @@ class DefaultRootComponent(
     init {
         timeTravelComponent?.let { TimeTravelComponentHolder.set(it) }
 
-        if (initialRoute != Route.Home && navigationStore.state.stack == listOf(Route.Home)) {
+        if (shouldReplaceRootInitialStack(
+                storeStack = navigationStore.state.stack,
+                initialRoute = initialRoute,
+                isRestoring = AppRuntimeState.verificationMode,
+            )
+        ) {
             navigationStore.accept(NavigationStore.Intent.ReplaceAll(listOf(initialRoute)))
         }
 
@@ -193,3 +204,21 @@ private fun collectStoreMemorySnapshots(): Map<String, Map<String, Int>> {
     }
     return result
 }
+
+internal fun resolveRootInitialStack(
+    storeStack: List<Route>,
+    initialRoute: Route,
+    isRestoring: Boolean,
+): List<Route> =
+    if (shouldReplaceRootInitialStack(storeStack, initialRoute, isRestoring)) {
+        listOf(initialRoute)
+    } else {
+        storeStack
+    }
+
+internal fun shouldReplaceRootInitialStack(
+    storeStack: List<Route>,
+    initialRoute: Route,
+    isRestoring: Boolean,
+): Boolean =
+    !isRestoring && storeStack == listOf(Route.Home) && initialRoute != Route.Home

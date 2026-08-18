@@ -43,6 +43,8 @@ adb shell am broadcast -a com.example.archshowcase.VF_RECORD_END -n com.example.
 
 ## 验证
 
+验证脚本会先检查设备连接、屏幕/锁屏状态、Debug App 安装和 `MainActivity` 可解析性；若设备未安装 `com.example.archshowcase`，会自动执行 `./gradlew :androidApp:installDebug`。
+
 ```bash
 # 单个 VF（目录含 manifest.json）
 ./tools/verify/run_verification.sh tools/verify/test-vfs/image_demo_scroll
@@ -84,14 +86,15 @@ manifest.json 关键字段：
 
 | 步骤 | 动作 |
 |------|------|
-| 0 | start.tte 为空时 force-stop App 回到 Home |
-| 1 | Push VF 到设备 |
-| 2 | `VERIFY_INIT` → 恢复初始状态 → Activity recreate |
-| 3 | 截图 A'（初始状态）|
-| 4 | 逐个 `VERIFY_DISPATCH` Intent |
-| 5 | 截图 B'（最终状态）|
-| 6 | SSIM 截图对比（start_baseline vs A'，end_baseline vs B'）|
-| 7 | 生成统一报告 |
+| 0 | Preflight：必要时安装 Debug App，校验 Activity 可启动 |
+| 1 | start.tte 为空时 force-stop App 回到 Home |
+| 2 | Push VF 到设备 |
+| 3 | `VERIFY_INIT` → 恢复初始状态 → Activity recreate |
+| 4 | 截图 A'（初始状态）|
+| 5 | 逐个 `VERIFY_DISPATCH` Intent |
+| 6 | 截图 B'（最终状态）|
+| 7 | SSIM 截图对比（start_baseline vs A'，end_baseline vs B'）|
+| 8 | 生成统一报告 |
 
 ## 输出
 

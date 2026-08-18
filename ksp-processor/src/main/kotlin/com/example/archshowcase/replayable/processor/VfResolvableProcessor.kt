@@ -296,8 +296,11 @@ class VfResolvableProcessor(
             }
             out.appendText("    )\n\n")
 
-            out.appendText("    fun resolve(vfIntent: VfIntent): Any? =\n")
-            out.appendText("        resolvers[vfIntent.store]?.invoke(vfIntent)\n\n")
+            out.appendText("    fun resolve(vfIntent: VfIntent): Any? {\n")
+            out.appendText("        val resolver = resolvers[vfIntent.store]\n")
+            out.appendText("            ?: resolvers[vfIntent.store.substringBefore(':')]\n")
+            out.appendText("        return resolver?.invoke(vfIntent)\n")
+            out.appendText("    }\n\n")
 
             out.appendText("    fun supportedStores(): Set<String> = resolvers.keys\n")
             out.appendText("}\n")

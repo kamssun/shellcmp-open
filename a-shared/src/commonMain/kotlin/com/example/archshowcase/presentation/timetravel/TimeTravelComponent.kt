@@ -12,6 +12,7 @@ import com.example.archshowcase.core.trace.export.ExportResult
 import com.example.archshowcase.core.trace.export.ImportResult
 import com.example.archshowcase.core.trace.export.StoreExportRegistry
 import com.arkivanov.mvikotlin.timetravel.export.TimeTravelExport
+import com.example.archshowcase.core.AppRuntimeState
 import com.example.archshowcase.core.trace.export.deserializeTimeTravelExport
 import com.example.archshowcase.core.trace.export.exportAllStores
 import com.example.archshowcase.core.trace.export.registerGeneratedExportStrategies
@@ -39,6 +40,9 @@ import kotlinx.serialization.json.Json
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.time.Clock
+
+private const val VF_EXPORT_WAIT_AFTER_INIT_MS = 5000L
+private const val VF_EXPORT_IMAGE_DELAY_MS = 3000L
 
 /**
  * VF 导出状态机
@@ -143,6 +147,7 @@ class DefaultTimeTravelComponent(
         )
 
     override fun onExportVfStart(screenshotBytes: ByteArray?) {
+        AppRuntimeState.vfRecordingMode = true
         val ctrlState = timeTravelController.state
         val eventIndex = if (isReplaying) ctrlState.selectedEventIndex else -1
         val tteBytes = if (eventIndex >= 0) {
@@ -178,7 +183,10 @@ class DefaultTimeTravelComponent(
                 recordStartScreenshot = null
                 startEventIndex = -1
             }
-            is VfExportState.Idle -> return null
+            is VfExportState.Idle -> {
+                AppRuntimeState.vfRecordingMode = false
+                return null
+            }
         }
 
         val recordEndTteBytes = if (startEventIndex >= 0) {
@@ -190,6 +198,7 @@ class DefaultTimeTravelComponent(
                 is ExportResult.Success -> endResult.data
                 is ExportResult.Error -> {
                     _vfExportState.value = VfExportState.Idle
+                    AppRuntimeState.vfRecordingMode = false
                     return null
                 }
             }
@@ -243,14 +252,15 @@ class DefaultTimeTravelComponent(
                 com.example.archshowcase.core.trace.verification.VfIntent(
                     store = si.storeName,
                     intentType = intentType,
-                    params = params
+                    params = params,
+                    delayAfterMs = if (intentType == "SendImage") VF_EXPORT_IMAGE_DELAY_MS else 0
                 )
             }
 
             // G3: createdAt 时间戳
             val now = Clock.System.now()
             val localDateTime = now.toLocalDateTime(TimeZone.currentSystemDefault())
-            val createdAt = "${localDateTime.year}-${localDateTime.monthNumber.toString().padStart(2, '0')}-${localDateTime.dayOfMonth.toString().padStart(2, '0')}T" +
+            val createdAt = "${localDateTime.year}-${(localDateTime.month.ordinal + 1).toString().padStart(2, '0')}-${localDateTime.day.toString().padStart(2, '0')}T" +
                 "${localDateTime.hour.toString().padStart(2, '0')}:${localDateTime.minute.toString().padStart(2, '0')}:${localDateTime.second.toString().padStart(2, '0')}"
 
             val networkTapeConfig = com.example.archshowcase.core.trace.verification.NetworkTapeConfig()
@@ -263,6 +273,7 @@ class DefaultTimeTravelComponent(
                 verificationText = verificationText,
                 intents = vfIntents,
                 createdAt = createdAt,
+                waitAfterInitMs = VF_EXPORT_WAIT_AFTER_INIT_MS,
                 networkTape = networkTapeConfig,
                 covers = covers
             )
@@ -288,6 +299,7 @@ class DefaultTimeTravelComponent(
         }
 
         _vfExportState.value = VfExportState.Idle
+        AppRuntimeState.vfRecordingMode = false
         return vfFiles
     }
 

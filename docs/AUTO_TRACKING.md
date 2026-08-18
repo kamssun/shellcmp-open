@@ -18,7 +18,7 @@
 
 ## Intent 采集规则
 
-**核心原则：所有用户交互入口必须经过 `appClickable` 系列，禁止裸用 Compose 原生交互 API。**
+**核心原则：业务优先使用 App* / 业务封装组件；组件内部接入 `appClickable` 系列，禁止裸用 Compose 原生交互 API。**
 
 | 场景 | 使用 | 替代 |
 |------|------|------|
@@ -28,6 +28,8 @@
 | 开关 | `AppSwitch`（内置追踪） | - |
 | 筛选标签 | `AppFilterChip`（内置追踪） | - |
 | 按钮 | `AppButton` / `AppTextButton` / `AppOutlinedButton` / `AppIconButton`（内置追踪） | - |
+
+业务代码只有在自定义交互无法沉入组件时，才直接使用 `appClickable` 系列。
 
 ### appClickable 参数
 

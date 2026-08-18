@@ -22,6 +22,7 @@ import com.example.archshowcase.chat.model.MessageBody
 import com.example.archshowcase.chat.model.SendStatus
 import com.example.archshowcase.i18n.tr
 import com.example.archshowcase.presentation.component.AppText
+import com.example.archshowcase.presentation.preview.PreviewWrapper
 import com.example.archshowcase.presentation.theme.AppTheme
 import com.example.archshowcase.resources.Res
 import com.example.archshowcase.resources.chat_action_copy
@@ -81,7 +82,7 @@ private fun ActionItem(text: String, onClick: () -> Unit) {
 @Preview
 @Composable
 private fun MessageActionPopupPreview() {
-    AppTheme {
+    PreviewWrapper { _ ->
         MessageActionPopup(
             message = ChatMessage(
                 id = "preview",

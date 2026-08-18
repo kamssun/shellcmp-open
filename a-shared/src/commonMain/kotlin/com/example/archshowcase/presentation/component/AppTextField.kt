@@ -20,9 +20,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.archshowcase.presentation.preview.PreviewWrapper
 import com.example.archshowcase.presentation.theme.AppTheme
 
 /** 替代 Material3 OutlinedTextField */
@@ -38,6 +40,7 @@ fun AppTextField(
     singleLine: Boolean = false,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     visualTransformation: VisualTransformation = VisualTransformation.None,
+    automationTag: String? = null,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
@@ -63,6 +66,7 @@ fun AppTextField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier
+                .then(automationTag?.let { Modifier.testTag(it) } ?: Modifier)
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = 48.dp)
                 .clip(shape)
@@ -93,6 +97,6 @@ fun AppTextField(
 
 @Preview
 @Composable
-fun AppTextFieldPreview() = AppTheme {
+fun AppTextFieldPreview() = PreviewWrapper { _ ->
     AppTextField(value = "Hello", onValueChange = {}, label = "Label", placeholder = "Placeholder")
 }

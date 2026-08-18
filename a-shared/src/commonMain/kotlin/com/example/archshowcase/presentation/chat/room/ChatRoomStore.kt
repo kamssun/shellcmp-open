@@ -14,6 +14,8 @@ import com.example.archshowcase.chat.model.WindowAnchor
 
 enum class InputMode : JvmSerializable { TEXT, VOICE }
 
+enum class ComposerPanel : JvmSerializable { None, Emoji, Plus }
+
 @VfResolvable
 interface ChatRoomStore : Store<
     ChatRoomStore.Intent,
@@ -35,6 +37,7 @@ interface ChatRoomStore : Store<
         data object ToggleInputMode : Intent
         data object ToggleEmojiPanel : Intent
         data object TogglePlusPanel : Intent
+        data class SetComposerPanel(val panel: ComposerPanel) : Intent
         data object LeaveConversation : Intent
         data class UpdateScrollPosition(val firstVisibleIndex: Int, val offset: Int) : Intent
     }
@@ -75,8 +78,8 @@ interface ChatRoomStore : Store<
         data class WindowUpdated(val window: MessageWindow, val timestamp: Long) : Msg
         data class TypingStateUpdated(val typingUser: String?, val timestamp: Long) : Msg
         data class InputModeChanged(val mode: InputMode, val timestamp: Long) : Msg
-        data class EmojiPanelToggled(val show: Boolean, val timestamp: Long) : Msg
-        data class PlusPanelToggled(val show: Boolean, val timestamp: Long) : Msg
+        data class MessageSubmitted(val type: ChatRoomHistoryType, val timestamp: Long) : Msg
+        data class ComposerPanelSet(val panel: ComposerPanel, val timestamp: Long) : Msg
         data class ScrollPositionUpdated(val position: ScrollPosition, val timestamp: Long) : Msg
     }
 }

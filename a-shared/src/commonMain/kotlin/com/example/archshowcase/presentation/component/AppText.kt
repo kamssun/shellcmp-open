@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.archshowcase.presentation.preview.PreviewWrapper
 import com.example.archshowcase.presentation.theme.AppTheme
 
 /** 替代 Material3 Text，默认使用 AppTheme 样式。在 AppButton 内部自动继承 contentColor。 */
@@ -35,6 +36,6 @@ fun AppText(
 
 @Preview
 @Composable
-fun AppTextPreview() = AppTheme {
+fun AppTextPreview() = PreviewWrapper { _ ->
     AppText("Hello, World!")
 }

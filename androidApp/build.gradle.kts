@@ -16,6 +16,8 @@ roborazzi {
         enable = true
         packages = listOf("com.example.archshowcase")
         includePrivatePreviews = false
+        testerQualifiedClassName = "com.example.archshowcase.test.StableComposePreviewTester"
+        useScanOptionParametersInTester = true
         robolectricConfig = mapOf(
             "sdk" to "[34]",
             "qualifiers" to "\"w411dp-h891dp-xxhdpi\"",
@@ -89,6 +91,8 @@ android {
             isIncludeAndroidResources = true
             all {
                 it.jvmArgs("-Xmx4g")
+                it.systemProperties["shellcmp.preview.renderImages"] =
+                    providers.gradleProperty("shellcmp.preview.renderImages").orElse("false").get()
                 it.systemProperties["robolectric.pixelCopyRenderMode"] = "hardware"
             }
         }
@@ -99,7 +103,7 @@ dependencies {
     implementation(project(":a-shared"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.profileinstaller)
-    implementation("androidx.emoji2:emoji2:1.4.0")
+    implementation(libs.emoji2)
     debugImplementation(libs.compose.uiTooling)
     debugImplementation(libs.leakcanary)
     baselineProfile(project(":macrobenchmark"))
@@ -107,8 +111,8 @@ dependencies {
     androidTestImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)
 
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("io.github.sergio-sastre.ComposablePreviewScanner:android:0.7.1")
+    testImplementation(libs.junit)
+    testImplementation(libs.composable.preview.scanner.android)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.roborazzi.rule)

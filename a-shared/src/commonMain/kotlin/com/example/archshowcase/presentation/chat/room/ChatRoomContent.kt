@@ -196,18 +196,20 @@ fun ChatRoomContent(
                     val olderTimestamp = messages.getOrNull(index + 1)?.timestamp
                     // 最旧消息且还有更多历史时，跳过 separator 避免加载后闪烁
                     val isLoadingBoundary = olderTimestamp == null && state.hasMoreBefore
-                    if (!isLoadingBoundary && shouldShowTimeSeparator(message.timestamp, olderTimestamp)) {
-                        TimeSeparator(timestamp = message.timestamp)
-                    }
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        if (!isLoadingBoundary && shouldShowTimeSeparator(message.timestamp, olderTimestamp)) {
+                            TimeSeparator(timestamp = message.timestamp)
+                        }
 
-                    if (message.isRecalled || message.body is MessageBody.System) {
-                        SystemMessageItem(message)
-                    } else {
-                        MessageBubble(
-                            message = message,
-                            onLongClick = { selectedMessage = message },
-                            onResendClick = { component.onResend(message.id) }
-                        )
+                        if (message.isRecalled || message.body is MessageBody.System) {
+                            SystemMessageItem(message)
+                        } else {
+                            MessageBubble(
+                                message = message,
+                                onLongClick = { selectedMessage = message },
+                                onResendClick = { component.onResend(message.id) }
+                            )
+                        }
                     }
                 }
                 if (!state.hasMoreBefore) {

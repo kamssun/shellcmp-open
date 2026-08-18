@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.example.archshowcase.i18n.tr
 import com.example.archshowcase.presentation.common.AsyncImage
 import com.example.archshowcase.presentation.component.AppText
+import com.example.archshowcase.presentation.preview.PreviewWrapper
 import com.example.archshowcase.presentation.theme.AppTheme
 import com.example.archshowcase.resources.Res
 import com.example.archshowcase.resources.chat_tab_emoji
@@ -146,7 +147,7 @@ private fun StickerGrid(onStickerClick: (String, String) -> Unit) {
 @Preview
 @Composable
 private fun EmojiPanelPreview() {
-    AppTheme {
+    PreviewWrapper { _ ->
         EmojiPanel(onEmojiClick = {}, onStickerClick = { _, _ -> })
     }
 }

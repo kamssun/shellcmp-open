@@ -3,19 +3,18 @@ package com.example.archshowcase.core.analytics
 import com.example.archshowcase.core.analytics.model.GestureType
 
 /**
- * 交互上下文：App* 组件 onClick 同步写入，TrackingExecutor 读取判定用户行为。
+ * 交互上下文底层实现：AppInteraction 写入，TrackingExecutor 读取。
  *
- * 调用栈标记机制：markUserGesture/endUserGesture 配对使用，depth 追踪嵌套深度。
- * 全链路在主线程，无需 ThreadLocal / AtomicReference。
+ * 业务层只使用 App* 组件或 appClickable 系列 API，不直接接触本对象。
  */
-object InteractionContext {
+internal object InteractionContext {
 
     private var gesture: GestureInfo? = null
     private var depth = 0
 
     private var savedGestures = ArrayDeque<GestureInfo>()
 
-    /** App* 组件 onClick 开头调用，写入交互上下文 */
+    /** 交互入口回调开始时写入上下文 */
     @PublishedApi
     internal fun markUserGesture(component: String, gestureType: GestureType = GestureType.TAP) {
         if (depth > 0 && gesture != null) {
@@ -25,7 +24,7 @@ object InteractionContext {
         depth++
     }
 
-    /** App* 组件 onClick 结束时调用，清除交互上下文 */
+    /** 交互入口回调结束时清除上下文 */
     @PublishedApi
     internal fun endUserGesture() {
         if (--depth <= 0) {
@@ -51,12 +50,12 @@ object InteractionContext {
     }
 }
 
-data class GestureInfo(
+internal data class GestureInfo(
     val component: String,
     val gestureType: GestureType,
 )
 
-inline fun withUserGesture(
+internal inline fun withUserGesture(
     component: String,
     gestureType: GestureType = GestureType.TAP,
     block: () -> Unit,

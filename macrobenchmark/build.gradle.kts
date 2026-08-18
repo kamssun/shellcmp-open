@@ -10,6 +10,12 @@ android {
     defaultConfig {
         minSdk = 28
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunnerArguments["benchmarkEmail"] =
+            providers.gradleProperty("benchmark.email").getOrElse("")
+        testInstrumentationRunnerArguments["benchmarkVerificationCode"] =
+            providers.gradleProperty("benchmark.verificationCode").getOrElse("")
+        testInstrumentationRunnerArguments["benchmarkLoginTimeoutSeconds"] =
+            providers.gradleProperty("benchmark.loginTimeoutSeconds").getOrElse("300")
     }
 
     compileOptions {
@@ -29,11 +35,11 @@ android {
 }
 
 baselineProfile {
-    managedDevices += "pixel6Api31"
     useConnectedDevices = true
 }
 
 dependencies {
     implementation(libs.benchmark.macro.junit4)
     implementation(libs.uiautomator)
+    implementation(libs.androidx.test.monitor)
 }

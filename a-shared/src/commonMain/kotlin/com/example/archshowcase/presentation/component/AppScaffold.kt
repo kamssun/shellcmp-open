@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.archshowcase.presentation.preview.PreviewWrapper
 import com.example.archshowcase.presentation.theme.AppTheme
 
 /** 替代 Material3 Scaffold */
@@ -40,7 +41,7 @@ fun AppScaffold(
 
 @Preview
 @Composable
-fun AppScaffoldPreview() = AppTheme {
+fun AppScaffoldPreview() = PreviewWrapper { _ ->
     AppScaffold(
         topBar = { AppTopBar(title = { AppText("Title") }) },
         content = { AppText("Content") },

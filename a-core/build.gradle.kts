@@ -31,8 +31,9 @@ kotlin {
 
         commonMain.dependencies {
             // api: 传递给 shared 及上层模块
-            api(compose.runtime)
-            api(compose.ui)
+            api(libs.compose.runtime)
+            api(libs.compose.foundation)
+            api(libs.compose.ui)
             api(libs.koin.core)
             api(libs.kotlinx.coroutines.core)
             api(libs.kotlinx.serialization.json)

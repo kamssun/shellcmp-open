@@ -13,6 +13,17 @@ plugins {
     alias(libs.plugins.kover)
 }
 
+subprojects {
+    plugins.withId("org.jetbrains.kotlin.multiplatform") {
+        extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension>("kotlin") {
+            compilerOptions {
+                // KMP platform bridges intentionally use expect/actual classes; Kotlin 2.3 requires explicit opt-in to silence the Beta warning.
+                freeCompilerArgs.add("-Xexpect-actual-classes")
+            }
+        }
+    }
+}
+
 apply(from = "gradle/kover.gradle")
 apply(from = "gradle/verification.gradle")
 

@@ -24,6 +24,16 @@ sealed interface ChatRoomHistoryType : JvmSerializable {
     data class ToggleEmojiPanel(val show: Boolean) : ChatRoomHistoryType
     @Serializable
     data class TogglePlusPanel(val show: Boolean) : ChatRoomHistoryType
+    @Serializable
+    data class SetComposerPanel(val panel: ComposerPanel) : ChatRoomHistoryType
+    @Serializable
+    data class SendText(val text: String) : ChatRoomHistoryType
+    @Serializable
+    data class SendImage(val url: String, val width: Int, val height: Int, val isGif: Boolean) : ChatRoomHistoryType
+    @Serializable
+    data class SendSticker(val stickerId: String, val url: String) : ChatRoomHistoryType
+    @Serializable
+    data class SendVoice(val durationMs: Int) : ChatRoomHistoryType
 }
 
 @Replayable(stateClass = ChatRoomStore.State::class)
@@ -86,6 +96,15 @@ data class ChatRoomHistoryRecord(
                 showEmojiPanel = false,
                 history = newHistory
             )
+            is ChatRoomHistoryType.SetComposerPanel -> prevState.copy(
+                showEmojiPanel = type.panel == ComposerPanel.Emoji,
+                showPlusPanel = type.panel == ComposerPanel.Plus,
+                history = newHistory
+            )
+            is ChatRoomHistoryType.SendText,
+            is ChatRoomHistoryType.SendImage,
+            is ChatRoomHistoryType.SendSticker,
+            is ChatRoomHistoryType.SendVoice -> prevState.copy(history = newHistory)
         }
     }
 
@@ -100,8 +119,22 @@ data class ChatRoomHistoryRecord(
             type.position.offset
         )
         is ChatRoomHistoryType.ToggleInputMode -> ChatRoomStore.Intent.ToggleInputMode
-        is ChatRoomHistoryType.ToggleEmojiPanel -> ChatRoomStore.Intent.ToggleEmojiPanel
-        is ChatRoomHistoryType.TogglePlusPanel -> ChatRoomStore.Intent.TogglePlusPanel
+        is ChatRoomHistoryType.ToggleEmojiPanel -> ChatRoomStore.Intent.SetComposerPanel(
+            if (type.show) ComposerPanel.Emoji else ComposerPanel.None
+        )
+        is ChatRoomHistoryType.TogglePlusPanel -> ChatRoomStore.Intent.SetComposerPanel(
+            if (type.show) ComposerPanel.Plus else ComposerPanel.None
+        )
+        is ChatRoomHistoryType.SetComposerPanel -> ChatRoomStore.Intent.SetComposerPanel(type.panel)
+        is ChatRoomHistoryType.SendText -> ChatRoomStore.Intent.SendText(type.text)
+        is ChatRoomHistoryType.SendImage -> ChatRoomStore.Intent.SendImage(
+            type.url,
+            type.width,
+            type.height,
+            type.isGif
+        )
+        is ChatRoomHistoryType.SendSticker -> ChatRoomStore.Intent.SendSticker(type.stickerId, type.url)
+        is ChatRoomHistoryType.SendVoice -> ChatRoomStore.Intent.SendVoice(type.durationMs)
     }
 }
 

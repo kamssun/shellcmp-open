@@ -3,6 +3,7 @@
 package com.example.archshowcase.chat.repository
 
 import com.example.archshowcase.core.AppConfig
+import com.example.archshowcase.core.AppRuntimeState
 import com.example.archshowcase.core.util.Log
 import com.example.archshowcase.chat.local.ChatDao
 import com.example.archshowcase.chat.local.MemberInsert
@@ -119,7 +120,9 @@ class MockChatRepository : ChatRepository, KoinComponent, AutoCloseable {
             delay(300)
             dao.updateStatus(msg.id, SendStatus.SENT, conversationId)
             // Trigger auto-reply
-            scheduleAutoReply(conversationId)
+            if (!AppRuntimeState.verificationMode && !AppRuntimeState.vfRecordingMode) {
+                scheduleAutoReply(conversationId)
+            }
         }
         return Result.success(msg)
     }

@@ -1,45 +1,51 @@
 [versions]
 # 基础框架
 jdk = "21"
-agp = "9.1.0"
-kotlin = "2.3.20"
-ksp = "2.3.6"
-composeMultiplatform = "1.10.2"
+agp = "9.2.1"
+kotlin = "2.3.21"
+ksp = "2.3.9"
+composeMultiplatform = "1.11.0"
 
 # 测试
-kover = "0.9.7"
+kover = "0.9.8"
 turbine = "1.2.1"
-roborazzi = "1.59.0"
+roborazzi = "1.63.0"
 robolectric = "4.16.1"
-compose-ui-test = "1.10.5"
+compose-ui-test = "1.11.2"
+# JUnit4 仍被 Roborazzi / Robolectric / Compose Rule / Android 测试门禁依赖。
+# 不要按 IDE 提示直接升到 5/6；等这些门禁支持 JUnit Platform 后再评估。
+junit = "4.13.2"
+composablePreviewScanner = "0.9.0"
 
-# Baseline Profile & Benchmark (alpha required for AGP 9.0 compatibility)
-benchmark = "1.5.0-alpha04"
+# Baseline Profile & Benchmark (alpha required for AGP 9.x compatibility)
+benchmark = "1.5.0-alpha06"
 uiautomator = "2.3.0"
+androidx-test-monitor = "1.8.0"
 profileinstaller = "1.4.1"
+emoji2 = "1.6.0"
 
 # Android SDK
 android-compileSdk = "36"
 android-minSdk = "24"
 android-targetSdk = "36"
 androidx-activity = "1.13.0"
-androidx-lifecycle = "2.9.1"
+androidx-lifecycle = "2.10.0"
 
 # 架构组件
-koin = "4.1.1"
-coroutines = "1.10.2"
+koin = "4.2.1"
+coroutines = "1.11.0"
 
 # Decompose + MVIKotlin
 decompose = "3.5.0"
-mvikotlin = "4.3.0"
+mvikotlin = "4.4.0"
 essenty = "2.5.0"
 
 # 网络与数据
-ktor = "3.4.1"
-serialization = "1.10.0"
-datetime = "0.7.1"
+ktor = "3.5.0"
+serialization = "1.11.0"
+datetime = "0.8.0"
 sqldelight = "2.3.2"
-datastore = "1.2.0"
+datastore = "1.2.1"
 
 # UI 组件
 coil = "3.4.0"
@@ -52,7 +58,7 @@ btrace = "3.0.0"
 
 # 工具库
 kermit = "2.1.0"
-filekit = "0.13.0"
+filekit = "0.14.1"
 crashkios = "0.9.0"
 mokoPermissions = "0.20.1"
 
@@ -162,6 +168,8 @@ ksp-api = { module = "com.google.devtools.ksp:symbol-processing-api", version.re
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+junit = { module = "junit:junit", version.ref = "junit" }
+composable-preview-scanner-android = { module = "io.github.sergio-sastre.ComposablePreviewScanner:android", version.ref = "composablePreviewScanner" }
 compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "compose-ui-test" }
 compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "compose-ui-test" }
 roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
@@ -173,7 +181,9 @@ robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectr
 # ===== Baseline Profile & Benchmark =====
 benchmark-macro-junit4 = { module = "androidx.benchmark:benchmark-macro-junit4", version.ref = "benchmark" }
 uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "uiautomator" }
+androidx-test-monitor = { module = "androidx.test:monitor", version.ref = "androidx-test-monitor" }
 profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "profileinstaller" }
+emoji2 = { module = "androidx.emoji2:emoji2", version.ref = "emoji2" }
 
 [plugins]
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }

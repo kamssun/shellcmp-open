@@ -13,10 +13,21 @@ class BaselineProfileGenerator {
     fun generateBaselineProfile() {
         rule.collect(
             packageName = "com.example.archshowcase",
+            includeInStartupProfile = true,
+            filterPredicate = ::isReleaseStartupProfileRule,
         ) {
+            RealLoginPreparer.prepare(this)
+            killProcess()
             pressHome()
             startActivityAndWait()
-            // TODO: 添加关键用户路径交互以扩大 profile 覆盖面
+            RealLoginPreparer.requireMainScreen()
         }
     }
+}
+
+private fun isReleaseStartupProfileRule(rule: String): Boolean {
+    val loginOnlyRules = listOf(
+        "com/example/archshowcase/presentation/login",
+    )
+    return loginOnlyRules.none { rule.contains(it) }
 }

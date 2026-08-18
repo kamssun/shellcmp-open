@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.archshowcase.presentation.preview.PreviewWrapper
 import com.example.archshowcase.presentation.theme.AppTheme
 
 /** 替代 Material3 Card */
@@ -31,6 +32,6 @@ fun AppCard(
 
 @Preview
 @Composable
-fun AppCardPreview() = AppTheme {
+fun AppCardPreview() = PreviewWrapper { _ ->
     AppCard { AppText("Card content", modifier = Modifier.padding(16.dp)) }
 }
